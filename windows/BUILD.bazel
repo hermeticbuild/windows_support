@@ -9,5 +9,6 @@ bzl_library(
         "//windows/private/extensions:msvc_runtime",
         "//windows/private/extensions:windows_sdk",
         "@bazel_tools//tools/build_defs/repo:cache.bzl",
+        "@bazel_tools//tools/build_defs/repo:utils.bzl",
     ],
 )
