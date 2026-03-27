@@ -277,8 +277,8 @@ def _windows_sdk_repository_impl(repository_ctx):
             args.extend(["--cab", cab_path])
         run_winarchive_tools(repository_ctx, winarchive_tools.path, args, "winarchive-tools cab-extract")
 
-    _create_winsdk_spaceless_alias(repository_ctx, winarchive_tools_dir)
     _apply_windows_sysroot_transformations(repository_ctx, winarchive_tools_dir)
+    _create_winsdk_spaceless_alias(repository_ctx, winarchive_tools_dir)
 
     include_versions = sorted(include_versions_seen.keys())
     lib_versions = sorted(lib_versions_seen.keys())
