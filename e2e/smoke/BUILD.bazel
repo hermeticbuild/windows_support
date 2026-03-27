@@ -1,10 +1,5 @@
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
-filegroup(
-    name = "extension_sources",
-    srcs = ["@windows//extensions:srcs"],
-)
-
 alias(
     name = "configured_msvc_runtime_repo",
     actual = "@msvc_runtime//:all_files",
@@ -20,6 +15,7 @@ alias(
 build_test(
     name = "smoke_test",
     targets = [
-        ":extension_sources",
+        ":configured_msvc_runtime_repo",
+        ":configured_windows_sdk_repo",
     ],
 )

@@ -10,13 +10,13 @@ local_path_override(
     path = "../..",
 )
 
-msvc_runtime = use_extension("@windows//windows/extensions.bzl", "msvc_runtime")
+msvc_runtime = use_extension("@windows//windows:extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
     msvc_version = "14.44.35207",
 )
 use_repo(msvc_runtime, "msvc_runtime")
 
-windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
     windows_sdk_version = "10.0.26100",
 )
