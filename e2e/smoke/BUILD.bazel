@@ -1,0 +1,25 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+filegroup(
+    name = "extension_sources",
+    srcs = ["@windows//extensions:srcs"],
+)
+
+alias(
+    name = "configured_msvc_runtime_repo",
+    actual = "@msvc_runtime//:all_files",
+    tags = ["manual"],
+)
+
+alias(
+    name = "configured_windows_sdk_repo",
+    actual = "@windows_sdk//:all_files",
+    tags = ["manual"],
+)
+
+build_test(
+    name = "smoke_test",
+    targets = [
+        ":extension_sources",
+    ],
+)

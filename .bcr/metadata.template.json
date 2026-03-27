@@ -1,7 +1,13 @@
 {
-  "homepage": "https://github.com/myorg/rules_mylang",
-  "maintainers": [],
-  "repository": ["github:myorg/rules_mylang"],
+  "homepage": "https://github.com/ArchangelX360/windows-bcr",
+  "maintainers": [
+    {
+      "name": "Titouan Bion",
+      "github": "ArchangelX360",
+      "github_user_id": 4418480
+    }
+  ],
+  "repository": ["github:ArchangelX360/windows-bcr"],
   "versions": [],
   "yanked_versions": {}
 }

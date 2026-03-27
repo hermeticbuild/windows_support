@@ -1,7 +1,23 @@
-bazel_dep(name = "com_myorg_rules_mylang", version = "0.0.0", dev_dependency = True)
+bazel_dep(
+    name = "windows",
+    version = "0.0.0",
+    dev_dependency = True,
+)
 bazel_dep(name = "bazel_skylib", version = "1.8.2", dev_dependency = True)
 
 local_path_override(
-    module_name = "com_myorg_rules_mylang",
+    module_name = "windows",
     path = "../..",
 )
+
+msvc_runtime = use_extension("@windows//extensions:msvc_runtime.bzl", "msvc_runtime")
+msvc_runtime.configure(
+    msvc_version = "14.44.35207",
+)
+use_repo(msvc_runtime, "msvc_runtime")
+
+windows_sdk = use_extension("@windows//extensions:windows_sdk.bzl", "windows_sdk")
+windows_sdk.configure(
+    windows_sdk_version = "10.0.26100",
+)
+use_repo(windows_sdk, "windows_sdk")

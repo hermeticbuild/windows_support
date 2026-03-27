@@ -1,0 +1,20 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "common.bzl",
+    "msvc_runtime.BUILD.bazel",
+    "msvc_runtime.bzl",
+    "windows_sdk.BUILD.bazel",
+    "windows_sdk.bzl",
+])
+
+filegroup(
+    name = "srcs",
+    srcs = [
+        "common.bzl",
+        "msvc_runtime.BUILD.bazel",
+        "msvc_runtime.bzl",
+        "windows_sdk.BUILD.bazel",
+        "windows_sdk.bzl",
+    ],
+)

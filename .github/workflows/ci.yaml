@@ -15,17 +15,16 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != 'main' }}
 jobs:
   test:
-    uses: bazel-contrib/.github/.github/workflows/bazel.yaml@v6
+    uses: bazel-contrib/.github/.github/workflows/bazel.yaml@v7.4.0
     with:
+      bazel_versions: '["8.x", "9.x"]'
       folders: |
         [
-          ".",
           "e2e/smoke"
         ]
       exclude: |
         [
-          {"folder": ".", "bzlmodEnabled": false},
-          {"folder": ".", "bazelVersion": "6.4.0"}
+          {"folder": "e2e/smoke", "bzlmodEnabled": false}
         ]
   pre-commit:
     runs-on: ubuntu-latest

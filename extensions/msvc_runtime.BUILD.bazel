@@ -1,0 +1,111 @@
+"""Generated BUILD template for the extracted MSVC runtime repository."""
+
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
+load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "windows_aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:windows",
+    ],
+)
+
+directory(
+    name = "sysroot_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "sysroot_directory",
+    parent = ":sysroot_files",
+    path = "__WINARCHIVE_TOOLS_DIR__",
+)
+
+directory(
+    name = "msvc_include_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/include/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "msvc_include",
+    parent = ":msvc_include_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/include",
+)
+
+directory(
+    name = "msvc_lib_arm64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/lib/arm64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "msvc_lib_arm64",
+    parent = ":msvc_lib_arm64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/lib/arm64",
+)
+
+directory(
+    name = "msvc_lib_x64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/lib/x64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "msvc_lib_x64",
+    parent = ":msvc_lib_x64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/VC/Tools/MSVC/__MSVC_VERSION__/lib/x64",
+)
+
+alias(
+    name = "msvc_lib",
+    actual = select({
+        ":windows_aarch64": ":msvc_lib_arm64",
+        "//conditions:default": ":msvc_lib_x64",
+    }),
+)
+
+filegroup(
+    name = "all_files",
+    srcs = glob(
+        ["**"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "msvc_runtime",
+    srcs = [":sysroot_directory"],
+)
+
+filegroup(
+    name = "headers_include",
+    srcs = glob(
+        [
+            "**/*.h",
+            "**/*.hh",
+            "**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "libs",
+    srcs = glob(
+        ["**/*.lib"],
+        allow_empty = True,
+    ),
+)

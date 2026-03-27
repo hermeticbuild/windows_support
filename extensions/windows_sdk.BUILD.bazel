@@ -1,0 +1,189 @@
+"""Generated BUILD template for the extracted Windows SDK repository."""
+
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
+load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "windows_aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:windows",
+    ],
+)
+
+directory(
+    name = "sysroot_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "sysroot_directory",
+    parent = ":sysroot_files",
+    path = "__WINARCHIVE_TOOLS_DIR__",
+)
+
+directory(
+    name = "winsdk_ucrt_include_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/ucrt/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_ucrt_include",
+    parent = ":winsdk_ucrt_include_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/ucrt",
+)
+
+directory(
+    name = "winsdk_shared_include_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/shared/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_shared_include",
+    parent = ":winsdk_shared_include_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/shared",
+)
+
+directory(
+    name = "winsdk_um_include_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/um/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_um_include",
+    parent = ":winsdk_um_include_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/um",
+)
+
+directory(
+    name = "winsdk_winrt_include_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/winrt/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_winrt_include",
+    parent = ":winsdk_winrt_include_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Include/__WINSDK_INCLUDE_VERSION__/winrt",
+)
+
+directory(
+    name = "winsdk_ucrt_lib_arm64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/ucrt/arm64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_ucrt_lib_arm64",
+    parent = ":winsdk_ucrt_lib_arm64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/ucrt/arm64",
+)
+
+directory(
+    name = "winsdk_ucrt_lib_x64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/ucrt/x64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_ucrt_lib_x64",
+    parent = ":winsdk_ucrt_lib_x64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/ucrt/x64",
+)
+
+directory(
+    name = "winsdk_um_lib_arm64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/um/arm64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_um_lib_arm64",
+    parent = ":winsdk_um_lib_arm64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/um/arm64",
+)
+
+directory(
+    name = "winsdk_um_lib_x64_files",
+    srcs = glob(
+        ["__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/um/x64/**"],
+        allow_empty = True,
+    ),
+)
+
+subdirectory(
+    name = "winsdk_um_lib_x64",
+    parent = ":winsdk_um_lib_x64_files",
+    path = "__WINARCHIVE_TOOLS_DIR__/__WINSDK_SPACELESS_DIR__/10/Lib/__WINSDK_LIB_VERSION__/um/x64",
+)
+
+alias(
+    name = "winsdk_ucrt_lib",
+    actual = select({
+        ":windows_aarch64": ":winsdk_ucrt_lib_arm64",
+        "//conditions:default": ":winsdk_ucrt_lib_x64",
+    }),
+)
+
+alias(
+    name = "winsdk_um_lib",
+    actual = select({
+        ":windows_aarch64": ":winsdk_um_lib_arm64",
+        "//conditions:default": ":winsdk_um_lib_x64",
+    }),
+)
+
+filegroup(
+    name = "all_files",
+    srcs = glob(
+        ["**"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "windows_sdk",
+    srcs = [":sysroot_directory"],
+)
+
+filegroup(
+    name = "headers_include",
+    srcs = glob(
+        [
+            "**/*.h",
+            "**/*.hh",
+            "**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "libs",
+    srcs = glob(
+        ["**/*.lib"],
+        allow_empty = True,
+    ),
+)
