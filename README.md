@@ -41,6 +41,16 @@ To use the `msvc_runtime` extension:
 
 See https://visualstudio.microsoft.com/license-terms for more information.
 
+## Limitations
+
+Sadly, that module is not perfect, there are several major limitations:
+
+- Case-sensitive systems are poorly supported by the inefficient `windows_sysroot_transformations` attribute, we plan to support `vfsoverlay` configuration in the future [see #3](https://github.com/ArchangelX360/windows-bcr/issues/3)
+- The specified MSVC runtime version must be present in the Visual Studio installer manifest specified or resolved from the Visual Studio channel, it cannot be any version
+- The specified Windows SDK version must be present in the Visual Studio installer manifest specified or resolved from the Visual Studio channel, it cannot be any version
+- Declaring multiple repositories for multiple versions of the MSVC runtime to coexist is unsupported
+- Declaring multiple repositories for multiple versions of the Windows SDK to coexist is unsupported
+
 ## Reproducibility
 
 Visual Studio installer manifest URL is resolved from the channel URL specified by `visual_studio_channel_url` (defaulting to `https://aka.ms/vs/stable/channel`).
