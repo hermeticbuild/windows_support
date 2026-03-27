@@ -1,5 +1,6 @@
 """bzlmod extension for assembling an MSVC runtime repository."""
 
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "INSTALLER_MANIFEST_FACTS_KEY", "download_installer_manifest", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
 
 _ARCH_TO_MSVC_COMPONENT = {
@@ -99,9 +100,8 @@ def _msvc_runtime_repository_impl(repository_ctx):
         repository_ctx,
         repository_ctx.attr.installer_manifest_url,
         repository_ctx.attr.installer_manifest_integrity,
-        repository_ctx.attr.installer_manifest_sha256,
     )
-    packages = _collect_vctools_packages(installer_manifest, repository_ctx.attr.architectures)
+    packages = _collect_vctools_packages(installer_manifest.decoded_struct, repository_ctx.attr.architectures)
 
     # Download/extract VSIX packages to look for the MSVC runtime pieces
 
@@ -181,7 +181,20 @@ def _msvc_runtime_repository_impl(repository_ctx):
         },
     )
 
-    return repository_ctx.repo_metadata(reproducible = all_downloaded_payloads_have_sha256)
+    if all_downloaded_payloads_have_sha256 and repository_ctx.attr.installer_manifest_integrity != "":
+        return repository_ctx.repo_metadata(reproducible = True)
+    else:
+        reproducibility_overrides = {}
+        if installer_manifest.integrity != repository_ctx.attr.installer_manifest_integrity:
+            reproducibility_overrides["installer_manifest_integrity"] = installer_manifest.integrity
+        return repository_ctx.repo_metadata(
+            reproducible = False,
+            attrs_for_reproducibility = update_attrs(
+                repository_ctx.attr,
+                _MSVC_RUNTIME_REPOSITORY_ATTRS.keys(),
+                reproducibility_overrides,
+            ),
+        )
 
 _MSVC_RUNTIME_ATTR = {
     "msvc_version": attr.string(
@@ -190,14 +203,16 @@ _MSVC_RUNTIME_ATTR = {
     ),
 }
 
+_MSVC_RUNTIME_REPOSITORY_ATTRS = COMMON_REPOSITORY_ATTR | _MSVC_RUNTIME_ATTR | {
+    "_build_file": attr.label(
+        allow_single_file = True,
+        default = ":msvc_runtime.BUILD.bazel",
+    ),
+}
+
 _msvc_runtime_repository = repository_rule(
     implementation = _msvc_runtime_repository_impl,
-    attrs = COMMON_REPOSITORY_ATTR | _MSVC_RUNTIME_ATTR | {
-        "_build_file": attr.label(
-            allow_single_file = True,
-            default = ":msvc_runtime.BUILD.bazel",
-        ),
-    },
+    attrs = _MSVC_RUNTIME_REPOSITORY_ATTRS,
 )
 
 def _read_configure_tag(module_ctx):
@@ -245,7 +260,6 @@ def _msvc_runtime_extension_impl(module_ctx):
         architectures = config.architectures,
         installer_manifest_url = installer_manifest["url"],
         installer_manifest_integrity = installer_manifest["integrity"],
-        installer_manifest_sha256 = installer_manifest["sha256"],
     )
 
     return module_ctx.extension_metadata(

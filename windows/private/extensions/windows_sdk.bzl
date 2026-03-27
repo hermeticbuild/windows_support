@@ -1,5 +1,6 @@
 """bzlmod extension for assembling a Windows SDK repository."""
 
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "INSTALLER_MANIFEST_FACTS_KEY", "download_installer_manifest", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
 
 _DEFAULT_SLIM = True
@@ -169,9 +170,8 @@ def _windows_sdk_repository_impl(repository_ctx):
         repository_ctx,
         repository_ctx.attr.installer_manifest_url,
         repository_ctx.attr.installer_manifest_integrity,
-        repository_ctx.attr.installer_manifest_sha256,
     )
-    sdk_package = _select_windows_sdk_package(installer_manifest, repository_ctx.attr.windows_sdk_version)
+    sdk_package = _select_windows_sdk_package(installer_manifest.decoded_struct, repository_ctx.attr.windows_sdk_version)
 
     cab_payloads = {}
     all_downloaded_payloads_have_sha256 = True
@@ -293,7 +293,20 @@ def _windows_sdk_repository_impl(repository_ctx):
         },
     )
 
-    return repository_ctx.repo_metadata(reproducible = all_downloaded_payloads_have_sha256)
+    if all_downloaded_payloads_have_sha256 and repository_ctx.attr.installer_manifest_integrity != "":
+        return repository_ctx.repo_metadata(reproducible = True)
+    else:
+        reproducibility_overrides = {}
+        if installer_manifest.integrity != repository_ctx.attr.installer_manifest_integrity:
+            reproducibility_overrides["installer_manifest_integrity"] = installer_manifest.integrity
+        return repository_ctx.repo_metadata(
+            reproducible = False,
+            attrs_for_reproducibility = update_attrs(
+                repository_ctx.attr,
+                _WINDOWS_SDK_REPOSITORY_ATTRS.keys(),
+                reproducibility_overrides,
+            ),
+        )
 
 _WINDOWS_SDK_ATTR = {
     "windows_sdk_version": attr.string(
@@ -309,14 +322,16 @@ _WINDOWS_SDK_ATTR = {
     ),
 }
 
+_WINDOWS_SDK_REPOSITORY_ATTRS = COMMON_REPOSITORY_ATTR | _WINDOWS_SDK_ATTR | {
+    "_build_file": attr.label(
+        allow_single_file = True,
+        default = ":windows_sdk.BUILD.bazel",
+    ),
+}
+
 _windows_sdk_repository = repository_rule(
     implementation = _windows_sdk_repository_impl,
-    attrs = COMMON_REPOSITORY_ATTR | _WINDOWS_SDK_ATTR | {
-        "_build_file": attr.label(
-            allow_single_file = True,
-            default = ":windows_sdk.BUILD.bazel",
-        ),
-    },
+    attrs = _WINDOWS_SDK_REPOSITORY_ATTRS,
 )
 
 def _read_configure_tag(module_ctx):
@@ -367,7 +382,6 @@ def _windows_sdk_extension_impl(module_ctx):
         windows_sysroot_transformations = config.windows_sysroot_transformations,
         installer_manifest_url = installer_manifest["url"],
         installer_manifest_integrity = installer_manifest["integrity"],
-        installer_manifest_sha256 = installer_manifest["sha256"],
     )
 
     return module_ctx.extension_metadata(
