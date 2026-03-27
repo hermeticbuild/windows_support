@@ -20,12 +20,10 @@ jobs:
       bazel_versions: '["8.x", "9.x"]'
       folders: |
         [
-          ".",
           "e2e/smoke"
         ]
       exclude: |
         [
-          {"folder": ".", "bzlmodEnabled": false},
           {"folder": "e2e/smoke", "bzlmodEnabled": false}
         ]
   pre-commit:
