@@ -5,6 +5,7 @@ bzl_library(
     srcs = ["extensions.bzl"],
     visibility = ["//visibility:public"],
     deps = [
+        "//windows/private/extensions:common",
         "//windows/private/extensions:msvc_runtime",
         "//windows/private/extensions:windows_sdk",
         "@bazel_tools//tools/build_defs/repo:cache.bzl",
