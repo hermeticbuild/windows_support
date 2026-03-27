@@ -1,6 +1,6 @@
 """bzlmod extension for assembling an MSVC runtime repository."""
 
-load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
+load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
 
 _MSVC_RUNTIME_FACTS_KEY = "msvc_runtime_v1"
 _MSVC_RUNTIME_FACTS_SCHEMA_VERSION = 2
@@ -215,13 +215,18 @@ def _read_configure_tag(module_ctx):
         return root_tags[0]
     if non_root_tags:
         return non_root_tags[0]
-    return None
+    return struct(
+        msvc_version = "",
+        winarchive_tools_urls = {},
+        winarchive_tools_integrity = {},
+        architectures = DEFAULT_ARCHITECTURES,
+        visual_studio_channel_url = DEFAULT_VS_CHANNEL_URL,
+        visual_studio_installer_manifest_url = "",
+        visual_studio_installer_manifest_integrity = "",
+    )
 
 def _msvc_runtime_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
-    if not config:
-        fail("must specify msvc_runtime.configure() extension")
-
     _check_msvc_license_requirements(module_ctx)
 
     facts = resolve_installer_manifest_from_module_facts(module_ctx, config, _MSVC_RUNTIME_FACTS_KEY, _MSVC_RUNTIME_FACTS_SCHEMA_VERSION)

@@ -1,7 +1,8 @@
 """bzlmod extension for assembling a Windows SDK repository."""
 
-load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
+load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
 
+_DEFAULT_SLIM = True
 WINSDK_DIR = "Windows Kits"
 WINSDK_SPACELESS_DIR = WINSDK_DIR.replace(" ", "")
 _WINDOWS_SDK_FACTS_KEY = "windows_sdk_v1"
@@ -298,7 +299,7 @@ _WINDOWS_SDK_ATTR = {
         doc = "Windows SDK version requested from the installer manifest.",
     ),
     "slim": attr.bool(
-        default = True,
+        default = _DEFAULT_SLIM,
         doc = "Whether to keep only the slim Windows SDK subset.",
     ),
     "windows_sysroot_transformations": attr.string_dict(
@@ -332,13 +333,20 @@ def _read_configure_tag(module_ctx):
         return root_tags[0]
     if non_root_tags:
         return non_root_tags[0]
-    return None
+    return struct(
+        windows_sdk_version = "",
+        slim = _DEFAULT_SLIM,
+        windows_sysroot_transformations = {},
+        winarchive_tools_urls = {},
+        winarchive_tools_integrity = {},
+        architectures = DEFAULT_ARCHITECTURES,
+        visual_studio_channel_url = DEFAULT_VS_CHANNEL_URL,
+        visual_studio_installer_manifest_url = "",
+        visual_studio_installer_manifest_integrity = "",
+    )
 
 def _windows_sdk_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
-    if not config:
-        fail("must specify windows_sdk.configure() extension")
-
     facts = resolve_installer_manifest_from_module_facts(module_ctx, config, _WINDOWS_SDK_FACTS_KEY, _WINDOWS_SDK_FACTS_SCHEMA_VERSION)
 
     _windows_sdk_repository(

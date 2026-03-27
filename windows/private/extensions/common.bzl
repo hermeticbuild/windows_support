@@ -1,5 +1,7 @@
 """Shared helpers for the extracted Windows module extensions."""
 
+DEFAULT_VS_CHANNEL_URL = "https://aka.ms/vs/stable/channel"
+DEFAULT_ARCHITECTURES = ["x64", "arm64"]
 _WINARCHIVE_TOOLS_VERSION = "v0.0.1"
 _REPO_URL = "https://github.com/ArchangelX360/winarchive-tools/releases/download/{}/winarchive-tools-{}"
 _DEFAULT_WINARCHIVE_TOOLS_URLS = {
@@ -23,15 +25,13 @@ _VISUAL_STUDIO_MANIFEST_COMPONENT = "Microsoft.VisualStudio.Manifests.VisualStud
 
 _COMMON_ATTR = {
     "winarchive_tools_urls": attr.string_dict(
-        default = {},
         doc = "Optional map from <os>_<arch> to prebuilt winarchive-tools binary URL. If not set, pinned defaults are used.",
     ),
     "winarchive_tools_integrity": attr.string_dict(
-        default = {},
         doc = "Optional map from <os>_<arch> to winarchive-tools binary SRI integrity.",
     ),
     "architectures": attr.string_list(
-        default = ["x64", "arm64"],
+        default = DEFAULT_ARCHITECTURES,
         doc = "Architectures to extract from the resolved runtime or SDKs",
     ),
 }
@@ -45,7 +45,7 @@ COMMON_REPOSITORY_ATTR = _COMMON_ATTR | {
 # Attributes used for the installer manifest resolution
 COMMON_MODULE_EXTENSION_ATTR = _COMMON_ATTR | {
     "visual_studio_channel_url": attr.string(
-        default = "https://aka.ms/vs/stable/channel",
+        default = DEFAULT_VS_CHANNEL_URL,
         doc = "Visual Studio release channel URL used to resolve the installer manifest, use `visual_studio_installer_manifest_url` and `visual_studio_installer_manifest_integrity` for reproducibility instead",
     ),
     "visual_studio_installer_manifest_url": attr.string(
