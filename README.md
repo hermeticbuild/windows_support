@@ -15,13 +15,13 @@ It allows to build native code targeting Windows MSVC, from Linux, macOS or Wind
 ```starlark
 bazel_dep(name = "windows", version = "0.0.1")
 
-msvc_runtime = use_extension("@windows//extensions:msvc_runtime.bzl", "msvc_runtime")
+msvc_runtime = use_extension("@windows//windows/extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
   msvc_version = "14.50.35717",  # Ensures that this exact version is in the installer manifest of the Visual Studio channel used
 )
 use_repo(msvc_runtime, "msvc_runtime")
 
-windows_sdk = use_extension("@windows//extensions:windows_sdk.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
 windows_sdk.configure(
     windows_sdk_version = "10.0.26100",
 )
@@ -41,7 +41,7 @@ bazel_dep(name = "windows", version = "0.0.1")
 visual_studio_installer_manifest_url = ""
 visual_studio_installer_manifest_integrity = ""
 
-msvc_runtime = use_extension("@windows//extensions:msvc_runtime.bzl", "msvc_runtime")
+msvc_runtime = use_extension("@windows//windows/extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
   msvc_version = "14.50.35717",  # Ensures that this exact version is in the installer manifest of the Visual Studio channel used
   visual_studio_installer_manifest_url = visual_studio_installer_manifest_url,
@@ -49,7 +49,7 @@ msvc_runtime.configure(
 )
 use_repo(msvc_runtime, "msvc_runtime")
 
-windows_sdk = use_extension("@windows//extensions:windows_sdk.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
 windows_sdk.configure(
   windows_sdk_version = "10.0.26100",
   visual_studio_installer_manifest_url = visual_studio_installer_manifest_url,
