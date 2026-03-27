@@ -70,3 +70,7 @@ windows_sdk.configure(
 )
 use_repo(windows_sdk, "windows_sdk")
 ```
+
+## Acknowledgements
+
+- The resolution logic is heavily inspired by [lorenz/winsysroot](https://github.com/lorenz/winsysroot), thank you Lorenz!
