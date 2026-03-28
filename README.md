@@ -16,15 +16,15 @@ It allows to build native code targeting Windows MSVC, from Linux, macOS or Wind
 bazel_dep(name = "windows", version = "0.0.1")
 
 # Warning: using `msvc_runtime` extension requires the machine to have the right to use the MSVC runtime, see section below for more information.
-msvc_runtime = use_extension("@windows//windows/extensions.bzl", "msvc_runtime")
+msvc_runtime = use_extension("@windows//windows:extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
   msvc_version = "14.50.35717",  # Ensures that this exact version is in the installer manifest of the Visual Studio channel used
 )
 use_repo(msvc_runtime, "msvc_runtime")
 
-windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
-    windows_sdk_version = "10.0.26100",
+    windows_sdk_version = "10.0.26100.7705",
 )
 use_repo(windows_sdk, "windows_sdk")
 ```
@@ -45,9 +45,8 @@ See https://visualstudio.microsoft.com/license-terms for more information.
 
 Sadly, that module is not perfect, there are several major limitations:
 
-- Case-sensitive systems are poorly supported by the inefficient `windows_sysroot_transformations` attribute, we plan to support `vfsoverlay` configuration in the future [see #3](https://github.com/ArchangelX360/windows-bcr/issues/3)
+- Case-sensitive systems are poorly supported by the inefficient `transformations` attribute, we plan to support `vfsoverlay` configuration in the future [see #3](https://github.com/ArchangelX360/windows-bcr/issues/3)
 - The specified MSVC runtime version must be present in the Visual Studio installer manifest specified or resolved from the Visual Studio channel, it cannot be any version
-- The specified Windows SDK version must be present in the Visual Studio installer manifest specified or resolved from the Visual Studio channel, it cannot be any version
 - Declaring multiple repositories for multiple versions of the MSVC runtime to coexist is unsupported
 - Declaring multiple repositories for multiple versions of the Windows SDK to coexist is unsupported
 
@@ -61,22 +60,22 @@ However, alternatively you could set the Visual Studio installer manifest URL an
 ```starlark
 bazel_dep(name = "windows", version = "0.0.1")
 
-visual_studio_installer_manifest_url = "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman"
-visual_studio_installer_manifest_integrity = "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8="
-
-msvc_runtime = use_extension("@windows//windows/extensions.bzl", "msvc_runtime")
+msvc_runtime = use_extension("@windows//windows:extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
-    msvc_version = "14.50.35717",  # Ensures that this exact version is in the installer manifest of the Visual Studio channel used
-    visual_studio_installer_manifest_url = visual_studio_installer_manifest_url,
-    visual_studio_installer_manifest_integrity = visual_studio_installer_manifest_integrity,
+  msvc_version = "14.50.35717",
+  visual_studio_installer_manifest_url = "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman",
+  visual_studio_installer_manifest_integrity = "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8=",
 )
 use_repo(msvc_runtime, "msvc_runtime")
 
-windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
-    windows_sdk_version = "10.0.26100",
-    visual_studio_installer_manifest_url = visual_studio_installer_manifest_url,
-    visual_studio_installer_manifest_integrity = visual_studio_installer_manifest_integrity,
+    windows_sdk_version = "10.0.26100.7705",
+    windows_sdk_integrity = {
+      "Microsoft.Windows.SDK.CPP": "sha256-/0VWYL7gcadEcVqWZWZvopwHaBV509gVlZqe7FpVZCQ=",
+      "Microsoft.Windows.SDK.CPP.x64": "sha256-rWzpD/lAEGmdKVSLPCseUsieuBFD4hmRVdmlw4ABtSs=",
+      "Microsoft.Windows.SDK.CPP.arm64": "sha256-A7wMA9Q5zvhQdLvNQl+dXTptO0Z5Z6zSHaO6bf7q+mc="
+    },
 )
 use_repo(windows_sdk, "windows_sdk")
 ```
@@ -90,14 +89,14 @@ This example does two things:
 - transforms (while keeping originals) to some cased variant observed in some C sources in the wild, either by symlinking (if supported) or copying them
 
 ```starlark
-windows_sdk = use_extension("@windows//windows/extensions.bzl", "windows_sdk")
+windows_sdk = use_extension("@windows//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
-    windows_sdk_version = "10.0.26100",
-    windows_sysroot_transformations = {
-        "WindowsKits/10/Include/10.0.26100.0/shared/driverspecs.h": "WindowsKits/10/Include/10.0.26100.0/shared/DriverSpecs.h",
-        "WindowsKits/10/Include/10.0.26100.0/shared/specstrings.h": "WindowsKits/10/Include/10.0.26100.0/shared/SpecStrings.h",
-        "WindowsKits/10/Include/10.0.26100.0/um/ole2.h": "WindowsKits/10/Include/10.0.26100.0/um/Ole2.h",
-        "WindowsKits/10/Include/10.0.26100.0/um/olectl.h": "WindowsKits/10/Include/10.0.26100.0/um/OleCtl.h",
+    windows_sdk_version = "10.0.26100.7705",
+    transformations = {
+        "base/c/Include/10.0.26100.0/shared/driverspecs.h": "base/c/Include/10.0.26100.0/shared/DriverSpecs.h",
+        "base/c/Include/10.0.26100.0/shared/specstrings.h": "base/c/Include/10.0.26100.0/shared/SpecStrings.h",
+        "base/c/Include/10.0.26100.0/um/ole2.h": "base/c/Include/10.0.26100.0/um/Ole2.h",
+        "base/c/Include/10.0.26100.0/um/olectl.h": "base/c/Include/10.0.26100.0/um/OleCtl.h",
         "**/*.h": "lowercase",
         "**/*.lib": "lowercase",
         "**/*.Lib": "lowercase",

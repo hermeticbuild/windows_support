@@ -1,8 +1,11 @@
 """bzlmod extension for assembling an MSVC runtime repository."""
 
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
-load(":common.bzl", "COMMON_MODULE_EXTENSION_ATTR", "COMMON_REPOSITORY_ATTR", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "INSTALLER_MANIFEST_FACTS_KEY", "download_installer_manifest", "ensure_winarchive_tools_binary", "resolve_installer_manifest_from_module_facts", "run_winarchive_tools")
+load(":common.bzl", "DEFAULT_ARCHITECTURES", "DEFAULT_VS_CHANNEL_URL", "ensure_winarchive_tools_binary", "run_winarchive_tools")
 
+_INSTALLER_MANIFEST_DOWNLOADS_DIR = "installer_manifest_downloads"
+_INSTALLER_MANIFEST_FACTS_KEY = "visual_studio_installer_manifest_v1"
+_VISUAL_STUDIO_MANIFEST_COMPONENT = "Microsoft.VisualStudio.Manifests.VisualStudio"
 _ARCH_TO_MSVC_COMPONENT = {
     "arm": "Microsoft.VisualStudio.Component.VC.Tools.ARM",
     "arm64": "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
@@ -21,6 +24,107 @@ def _check_msvc_license_requirements(module_ctx):
 
             See https://visualstudio.microsoft.com/license-terms for more information.
         """)
+
+def _resolve_installer_manifest_from_module_facts(
+        module_ctx,
+        visual_studio_channel_url,
+        visual_studio_installer_manifest_url,
+        visual_studio_installer_manifest_integrity,
+        key):
+    """Resolves the Visual Studio installer manifest from Bazel module facts if existing, or from passed URLs if not.
+
+    Args:
+      module_ctx: Module context
+      visual_studio_channel_url: Visual Studio channel URL from which to resolve the Visual Studio installer manifest URL, if not specified
+      visual_studio_installer_manifest_url: Visual Studio installer manifest URL
+      visual_studio_installer_manifest_integrity: (optional) Visual Studio installer manifest integrity
+      key: Module fact key from which to retrieve/store the resolution result
+
+    Returns:
+      A struct containing the downloaded Visual Studio installer manifest in a form of a resolved Bazel module fact
+    """
+
+    cached = module_ctx.facts.get(key)
+    requested = {
+        "visual_studio_channel_url": visual_studio_channel_url,
+        "visual_studio_installer_manifest_url": visual_studio_installer_manifest_url,
+        "visual_studio_installer_manifest_integrity": visual_studio_installer_manifest_integrity,
+    }
+    if cached != None and cached.get("requested") == requested:
+        return cached
+    else:
+        if not visual_studio_installer_manifest_url:  # if there is not user-defined Visual Studio installer URL, we derive it from the channel instead
+            download_infos = _resolve_installer_manifest_download_info_from_channel(module_ctx, visual_studio_channel_url)
+        else:
+            download_infos = struct(
+                url = visual_studio_installer_manifest_url,
+                integrity = visual_studio_installer_manifest_integrity,
+            )
+        return {
+            "request": requested,
+            "url": download_infos.url,
+            "integrity": download_infos.integrity,
+        }
+
+def _resolve_installer_manifest_download_info_from_channel(module_ctx, channel_url):
+    channel_manifest = _download_json(
+        module_ctx,
+        channel_url,
+        "{}/channel_manifest.json".format(_INSTALLER_MANIFEST_DOWNLOADS_DIR),
+    ).decoded_struct
+
+    for item in channel_manifest.get("channelItems", []):
+        if item.get("id", "") != _VISUAL_STUDIO_MANIFEST_COMPONENT:
+            continue
+        payloads = item.get("payloads", [])
+        if not payloads:
+            fail("channel manifest entry {} has no payloads".format(_VISUAL_STUDIO_MANIFEST_COMPONENT))
+        vc_manifest_component_package = payloads[0]
+        visual_studio_installer_manifest_url = vc_manifest_component_package.get("url", "")
+        if not visual_studio_installer_manifest_url:
+            fail("channel manifest entry {} is missing the expected payload url".format(_VISUAL_STUDIO_MANIFEST_COMPONENT))
+        return struct(
+            url = visual_studio_installer_manifest_url,
+            integrity = "",  # TODO: `use vc_manifest_component_package.get("sha256", ""),` + conversion to Bazel integrity, when Microsoft fixes their channel feed...
+        )
+
+    fail("failed to find installer manifest URL in Visual Studio channel manifest")
+
+def _download_installer_manifest(module_ctx, installer_manifest_url, installer_manifest_integrity):
+    return _download_json(
+        module_ctx,
+        installer_manifest_url,
+        "{}/installer_manifest.json".format(_INSTALLER_MANIFEST_DOWNLOADS_DIR),
+        installer_manifest_integrity,
+    )
+
+def _download_json(module_ctx, url, output, integrity = ""):
+    """Downloads the JSON pointed by the given URL to the given output path.
+
+    Args:
+      module_ctx: Module context
+      url: A URL pointing to a JSON file
+      output: the path where the downloaded JSON will be written
+      integrity: the integrity against which to check the downloaded content
+
+    Returns:
+      A struct the decoded JSON, and the integrity
+    """
+
+    download_kwargs = {
+        "url": url,
+        "output": output,
+    }
+    if integrity:
+        download_kwargs["integrity"] = integrity
+    download_info = module_ctx.download(**download_kwargs)
+    decoded = json.decode(module_ctx.read(output), default = None)
+    if decoded == None:
+        fail("failed to decode JSON downloaded from {} to {}".format(url, output))
+    return struct(
+        integrity = download_info.integrity,
+        decoded_struct = decoded,
+    )
 
 def _collect_vctools_packages(installer_manifest, architectures):
     packages_by_id = {}
@@ -96,7 +200,7 @@ def _msvc_runtime_repository_impl(repository_ctx):
     for arch in architectures:
         has_arch[arch] = True
 
-    installer_manifest = download_installer_manifest(
+    installer_manifest = _download_installer_manifest(
         repository_ctx,
         repository_ctx.attr.installer_manifest_url,
         repository_ctx.attr.installer_manifest_integrity,
@@ -197,13 +301,32 @@ def _msvc_runtime_repository_impl(repository_ctx):
         )
 
 _MSVC_RUNTIME_ATTR = {
+    "architectures": attr.string_list(
+        default = DEFAULT_ARCHITECTURES,
+        doc = "Architectures to extract from the resolved MSVC runtime components",
+    ),
     "msvc_version": attr.string(
         default = "",
         doc = "Optional expected MSVC tools version. If set, extraction fails when the resolved payloads contain a different version.",
     ),
+    "installer_manifest_url": attr.string(
+        doc = "URL of the resolved/specified Visual Studio installer manifest",
+    ),
+    "installer_manifest_integrity": attr.string(
+        doc = "Optional integrity of the resolved/specified Visual Studio installer manifest",
+    ),
+    "installer_manifest_sha256": attr.string(
+        doc = "Optional integrity (as sha256 hash) of the resolved/specified Visual Studio installer manifest",
+    ),
+    "winarchive_tools_urls": attr.string_dict(
+        doc = "Optional map from <os>_<arch> to prebuilt winarchive-tools binary URL. If not set, pinned defaults are used.",
+    ),
+    "winarchive_tools_integrity": attr.string_dict(
+        doc = "Optional map from <os>_<arch> to winarchive-tools binary SRI integrity.",
+    ),
 }
 
-_MSVC_RUNTIME_REPOSITORY_ATTRS = COMMON_REPOSITORY_ATTR | _MSVC_RUNTIME_ATTR | {
+_MSVC_RUNTIME_REPOSITORY_ATTRS = _MSVC_RUNTIME_ATTR | {
     "_build_file": attr.label(
         allow_single_file = True,
         default = ":msvc_runtime.BUILD.bazel",
@@ -244,16 +367,17 @@ def _msvc_runtime_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
     _check_msvc_license_requirements(module_ctx)
 
-    installer_manifest = resolve_installer_manifest_from_module_facts(
+    installer_manifest = _resolve_installer_manifest_from_module_facts(
         module_ctx,
         config.visual_studio_channel_url,
         config.visual_studio_installer_manifest_url,
         config.visual_studio_installer_manifest_integrity,
-        INSTALLER_MANIFEST_FACTS_KEY,
+        _INSTALLER_MANIFEST_FACTS_KEY,
     )
 
+    repository_name = "msvc_runtime"
     _msvc_runtime_repository(
-        name = "msvc_runtime",
+        name = repository_name,
         msvc_version = config.msvc_version,
         winarchive_tools_urls = config.winarchive_tools_urls,
         winarchive_tools_integrity = config.winarchive_tools_integrity,
@@ -263,15 +387,26 @@ def _msvc_runtime_extension_impl(module_ctx):
     )
 
     return module_ctx.extension_metadata(
-        facts = {INSTALLER_MANIFEST_FACTS_KEY: installer_manifest},
-        root_module_direct_deps = ["msvc_runtime"],
+        facts = {_INSTALLER_MANIFEST_FACTS_KEY: installer_manifest},
+        root_module_direct_deps = [repository_name],
         root_module_direct_dev_deps = [],
     )
 
 msvc_runtime = module_extension(
     implementation = _msvc_runtime_extension_impl,
     tag_classes = {
-        "configure": tag_class(attrs = COMMON_MODULE_EXTENSION_ATTR | _MSVC_RUNTIME_ATTR),
+        "configure": tag_class(attrs = _MSVC_RUNTIME_ATTR | {
+            "visual_studio_channel_url": attr.string(
+                default = DEFAULT_VS_CHANNEL_URL,
+                doc = "Visual Studio release channel URL used to resolve the installer manifest, use `visual_studio_installer_manifest_url` and `visual_studio_installer_manifest_integrity` for reproducibility instead",
+            ),
+            "visual_studio_installer_manifest_url": attr.string(
+                doc = "Override URL for the Visual Studio installer manifest, if set the installer manifest will not be resolved from a query to `visual_studio_channel_url`",
+            ),
+            "visual_studio_installer_manifest_integrity": attr.string(
+                doc = "Optional SRI integrity for the downloaded Visual Studio installer manifest.",
+            ),
+        }),
     },
     doc = "MSVC runtime extension.",
 )

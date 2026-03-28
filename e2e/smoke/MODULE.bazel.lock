@@ -528,9 +528,40 @@
               ],
               "windows_sdk_version": "10.0.26100",
               "slim": true,
-              "windows_sysroot_transformations": {},
+              "transformations": {},
               "installer_manifest_url": "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman",
               "installer_manifest_integrity": ""
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [
+            "windows_sdk"
+          ],
+          "explicitRootModuleDirectDevDeps": [],
+          "useAllRepos": "NO",
+          "reproducible": false
+        }
+      }
+    },
+    "@@windows+//windows:extensions.bzl%windows_sdk": {
+      "general": {
+        "bzlTransitiveDigest": "kFao8wjYnc4dXDxiWXl+8hsMwZyC2LgMdxJN+mQhVhc=",
+        "usagesDigest": "Mq31EYNGhQ4LtmPHffl8h3P3zmhegrkUmk3kjJwpiO8=",
+        "recordedInputs": [
+          "REPO_MAPPING:windows+,bazel_tools bazel_tools"
+        ],
+        "generatedRepoSpecs": {
+          "windows_sdk": {
+            "repoRuleId": "@@windows+//windows/private/extensions:windows_sdk.bzl%_windows_sdk_repository",
+            "attributes": {
+              "windows_sdk_version": "10.0.28000.1-rtm",
+              "windows_sdk_integrity": {},
+              "transformations": {},
+              "architectures": [
+                "x64",
+                "arm64"
+              ]
             }
           }
         },
