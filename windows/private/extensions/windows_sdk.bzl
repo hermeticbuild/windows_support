@@ -10,7 +10,7 @@ _ARCH_PACKAGES = {
     "arm64": "Microsoft.Windows.SDK.CPP.arm64",
     "x64": "Microsoft.Windows.SDK.CPP.x64",
 }
-_CASE_SENSITIVITY_PROBE = ".windows_sdk_case_sensitivity_probe"
+_VFSOVERLAY_PATH = "vfsoverlay.yaml"
 
 def _basename(path):
     path_str = str(path).replace("\\", "/")
@@ -84,17 +84,6 @@ def _select_single_version(versions, field_name):
         fail("expected exactly one {}, got {}".format(field_name, versions))
     return versions[0]
 
-def _matches_lowercase_transformation(src_rel, src_pattern):
-    if src_pattern.startswith("**/*."):
-        return src_rel.endswith(src_pattern[len("**/*"):])
-    return src_rel == src_pattern or src_rel.endswith("/" + src_pattern)
-
-def _lowercase_basename(path):
-    slash_idx = path.rfind("/")
-    if slash_idx == -1:
-        return path.lower()
-    return path[:slash_idx + 1] + path[slash_idx + 1:].lower()
-
 def _collect_files_recursive(path, files):
     if not path.is_dir:
         files.append(path)
@@ -123,52 +112,57 @@ def _relative_to_repo_root(repository_ctx, path):
         return abs_path[len(repo_root) + 1:]
     return abs_path
 
-def _repository_fs_is_case_sensitive(repository_ctx):
-    probe_path = repository_ctx.path(_CASE_SENSITIVITY_PROBE)
-    if not probe_path.exists:
-        # Keep the probe hidden so generated BUILD globs do not pick it up.
-        repository_ctx.file(_CASE_SENSITIVITY_PROBE, "")
-    return not repository_ctx.path(_CASE_SENSITIVITY_PROBE.upper()).exists
+def _yaml_quote(value):
+    return "\"{}\"".format(value.replace("\\", "\\\\").replace("\"", "\\\""))
 
-def _apply_transformations(repository_ctx):
-    transformations = repository_ctx.attr.transformations
-    if not transformations:
-        return
+def _fail_on_vfsoverlay_casefold_collisions(files):
+    collision_by_folded_path = {}
+    for rel_path in sorted(files):
+        folded_rel_path = rel_path.lower()
+        collision = collision_by_folded_path.get(folded_rel_path)
+        if collision != None and collision != rel_path:
+            fail(
+                "cannot generate a case-insensitive Windows SDK vfsoverlay because these published paths only differ by case: '{}' and '{}'".format(
+                    collision,
+                    rel_path,
+                ),
+            )
+        collision_by_folded_path[folded_rel_path] = rel_path
 
+def _write_vfsoverlay(repository_ctx):
     sysroot = repository_ctx.path(_SYSROOT_DIR)
     if not sysroot.exists:
-        return
-    if not _repository_fs_is_case_sensitive(repository_ctx):
-        # Case-only aliases cannot be materialized on case-insensitive filesystems.
+        repository_ctx.file(
+            _VFSOVERLAY_PATH,
+            "\n".join([
+                "version: 0",
+                "case-sensitive: false",
+                "overlay-relative: true",
+                "root-relative: overlay-dir",
+                "roots: []",
+                "",
+            ]),
+        )
         return
 
     all_files = []
     _collect_files_recursive(sysroot, all_files)
-    all_rel_files = [_relative_to_repo_root(repository_ctx, f) for f in all_files]
-    created = {}
+    all_rel_files = sorted([_relative_to_repo_root(repository_ctx, f) for f in all_files])
+    _fail_on_vfsoverlay_casefold_collisions(all_rel_files)
 
-    for src_pattern, transform in transformations.items():
-        src_pattern = _normalize_relpath(src_pattern)
-        if transform != "lowercase":
-            transform = _normalize_relpath(transform)
-
-        for src_rel in all_rel_files:
-            if transform == "lowercase":
-                if not _matches_lowercase_transformation(src_rel, src_pattern):
-                    continue
-                dst_rel = _lowercase_basename(src_rel)
-            else:
-                if src_rel != src_pattern and not src_rel.endswith("/" + src_pattern):
-                    continue
-                dst_rel = src_rel[:len(src_rel) - len(src_pattern)] + transform
-
-            if not dst_rel or dst_rel == src_rel or created.get(dst_rel, False):
-                continue
-            if repository_ctx.path(dst_rel).exists:
-                continue
-
-            repository_ctx.symlink(src_rel, dst_rel)
-            created[dst_rel] = True
+    lines = [
+        "version: 0",
+        "case-sensitive: false",
+        "overlay-relative: true",
+        "root-relative: overlay-dir",
+        "roots:",
+    ]
+    for rel_path in all_rel_files:
+        lines.append("  - type: file")
+        lines.append("    name: {}".format(_yaml_quote(rel_path)))
+        lines.append("    external-contents: {}".format(_yaml_quote(rel_path)))
+    lines.append("")
+    repository_ctx.file(_VFSOVERLAY_PATH, "\n".join(lines))
 
 def _windows_sdk_repository_impl(repository_ctx):
     if not repository_ctx.attr.windows_sdk_version:
@@ -220,8 +214,8 @@ def _windows_sdk_repository_impl(repository_ctx):
         "windows_sdk_include_versions",
     )
 
-    _apply_transformations(repository_ctx)
     _keep_exposed_windows_sdk_files(repository_ctx, _SYSROOT_DIR, include_version, requested_architectures)
+    _write_vfsoverlay(repository_ctx)
 
     repository_ctx.template(
         "BUILD.bazel",
@@ -255,27 +249,6 @@ _WINDOWS_SDK_ATTR = {
         default = {},
         doc = "(optional) dict from Windows SDK NuGet package ID to integrity string",
     ),
-    "transformations": attr.string_dict(
-        default = {},
-        doc = """
-            Dict of source path patterns to transformations applied when run on case-sensitive filesystems.
-
-            Supports exact paths and `**/*.ext` patterns. Use value `lowercase` to create lowercase aliases.
-
-            Example:
-            ```
-            transformations = {
-                "base/c/Include/10.0.26100.0/shared/driverspecs.h": "base/c/Include/10.0.26100.0/shared/DriverSpecs.h",
-                "base/c/Include/10.0.26100.0/shared/specstrings.h": "base/c/Include/10.0.26100.0/shared/SpecStrings.h",
-                "base/c/Include/10.0.26100.0/um/ole2.h": "base/c/Include/10.0.26100.0/um/Ole2.h",
-                "base/c/Include/10.0.26100.0/um/olectl.h": "base/c/Include/10.0.26100.0/um/OleCtl.h",
-                "**/*.h": "lowercase",
-                "**/*.lib": "lowercase",
-                "**/*.Lib": "lowercase",
-            }
-            ```
-        """,
-    ),
 }
 
 _WINDOWS_SDK_REPOSITORY_ATTRS = _WINDOWS_SDK_ATTR | {
@@ -308,7 +281,6 @@ def _read_configure_tag(module_ctx):
     return struct(
         windows_sdk_version = "",
         windows_sdk_integrity = {},
-        transformations = {},
         architectures = _DEFAULT_ARCHITECTURES,
     )
 
@@ -320,7 +292,6 @@ def _windows_sdk_extension_impl(module_ctx):
         name = repository_name,
         windows_sdk_version = config.windows_sdk_version,
         windows_sdk_integrity = config.windows_sdk_integrity,
-        transformations = config.transformations,
         architectures = config.architectures,
     )
 

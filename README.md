@@ -45,7 +45,7 @@ See https://visualstudio.microsoft.com/license-terms for more information.
 
 Sadly, that module is not perfect, there are several major limitations:
 
-- Case-sensitive systems are poorly supported by the inefficient `transformations` attribute, we plan to support `vfsoverlay` configuration in the future [see #3](https://github.com/hermeticbuild/windows_support/issues/3)
+- Case-sensitive systems require LLVM-based consuming toolchains to opt into the exported `@windows_sdk//:vfsoverlay` input; non-LLVM toolchains are unsupported
 - The specified MSVC runtime version must be present in the Visual Studio installer manifest specified or resolved from the Visual Studio channel, it cannot be any version
 - Declaring multiple repositories for multiple versions of the MSVC runtime to coexist is unsupported
 - Declaring multiple repositories for multiple versions of the Windows SDK to coexist is unsupported
@@ -82,25 +82,20 @@ use_repo(windows_sdk, "windows_sdk")
 
 ## Case-sensitive filesystem support
 
-This is an example on how case-sensitive filesystems can be supported.
-This example does two things:
+`@windows_sdk` exports a case-insensitive LLVM VFS overlay at `@windows_sdk//:vfsoverlay`.
+It mirrors every published file in the exposed `sysroot` and lets Clang/lld resolve the SDK as if the tree were case-insensitive, without mutating the repository contents.
 
-- naively lowercases (while keeping originals) headers and libraries files, either by symlinking (if supported) or copying them
-- transforms (while keeping originals) to some cased variant observed in some C sources in the wild, either by symlinking (if supported) or copying them
+The overlay is relocatable and is generated after the SDK output is pruned, so it only references files that are part of the public repository surface.
+If two published SDK paths differ only by case, repository fetching fails because a case-insensitive overlay would be ambiguous.
+
+Consuming toolchains need to add `@windows_sdk//:vfsoverlay` as an action input and pass it to LLVM tools on case-sensitive hosts, for example with Clang's `-vfsoverlay <path>`.
+
+This is the module configuration:
 
 ```starlark
 windows_sdk = use_extension("@windows_support//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
     windows_sdk_version = "10.0.26100.7705",
-    transformations = {
-        "base/c/Include/10.0.26100.0/shared/driverspecs.h": "base/c/Include/10.0.26100.0/shared/DriverSpecs.h",
-        "base/c/Include/10.0.26100.0/shared/specstrings.h": "base/c/Include/10.0.26100.0/shared/SpecStrings.h",
-        "base/c/Include/10.0.26100.0/um/ole2.h": "base/c/Include/10.0.26100.0/um/Ole2.h",
-        "base/c/Include/10.0.26100.0/um/olectl.h": "base/c/Include/10.0.26100.0/um/OleCtl.h",
-        "**/*.h": "lowercase",
-        "**/*.lib": "lowercase",
-        "**/*.Lib": "lowercase",
-    },
 )
 use_repo(windows_sdk, "windows_sdk")
 ```

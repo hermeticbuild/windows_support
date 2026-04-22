@@ -137,8 +137,8 @@
     "https://bcr.bazel.build/modules/rules_java/8.3.2/MODULE.bazel": "7336d5511ad5af0b8615fdc7477535a2e4e723a357b6713af439fe8cf0195017",
     "https://bcr.bazel.build/modules/rules_java/8.5.1/MODULE.bazel": "d8a9e38cc5228881f7055a6079f6f7821a073df3744d441978e7a43e20226939",
     "https://bcr.bazel.build/modules/rules_java/8.6.1/MODULE.bazel": "f4808e2ab5b0197f094cabce9f4b006a27766beb6a9975931da07099560ca9c2",
-    "https://bcr.bazel.build/modules/rules_java/9.0.3/MODULE.bazel": "1f98ed015f7e744a745e0df6e898a7c5e83562d6b759dfd475c76456dda5ccea",
-    "https://bcr.bazel.build/modules/rules_java/9.0.3/source.json": "b038c0c07e12e658135bbc32cc1a2ded6e33785105c9d41958014c592de4593e",
+    "https://bcr.bazel.build/modules/rules_java/9.1.0/MODULE.bazel": "ee63f27e36a3fada80342869361182f120a9819c74320e8e65b1e04ba0cd7a9d",
+    "https://bcr.bazel.build/modules/rules_java/9.1.0/source.json": "da589573c1dee2c9ac4a568b301269a2e8191110ff0345c1a959fa7ea6c4dfd6",
     "https://bcr.bazel.build/modules/rules_jvm_external/4.4.2/MODULE.bazel": "a56b85e418c83eb1839819f0b515c431010160383306d13ec21959ac412d2fe7",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.1/MODULE.bazel": "33f6f999e03183f7d088c9be518a63467dfd0be94a11d0055fe2d210f89aa909",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.2/MODULE.bazel": "d9351ba35217ad0de03816ef3ed63f89d411349353077348a45348b096615036",
@@ -200,7 +200,7 @@
   "moduleExtensions": {
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "ABI1D/sbS1ovwaW/kHDoj8nnXjQ0oKU9fzmzEG4iT8o=",
+        "bzlTransitiveDigest": "Ga4z8lQy1YQ5rAMy+dOl0dqcCEBnYNCXku8x3YQmDZI=",
         "usagesDigest": "QI2z8ZUR+mqtbwsf2fLqYdJAkPOHdOV+tF2yVAUgRzw=",
         "recordedInputs": [
           "REPO_MAPPING:rules_kotlin+,bazel_tools bazel_tools"
@@ -257,7 +257,7 @@
     },
     "@@rules_python+//python/extensions:config.bzl%config": {
       "general": {
-        "bzlTransitiveDigest": "2hLgIvNVTLgxus0ZuXtleBe70intCfo0cHs8qvt6cdM=",
+        "bzlTransitiveDigest": "iibnRYgg8LpcfmH7EAnVwYePC3jsVaJ6Id8XxUjSZps=",
         "usagesDigest": "ZVSXMAGpD+xzVNPuvF1IoLBkty7TROO0+akMapt1pAg=",
         "recordedInputs": [
           "REPO_MAPPING:rules_python+,bazel_tools bazel_tools",
@@ -453,17 +453,17 @@
         }
       }
     },
-    "@@windows+//windows:extensions.bzl%msvc_runtime": {
+    "@@windows_support+//windows:extensions.bzl%msvc_runtime": {
       "general": {
-        "bzlTransitiveDigest": "+e6N3lqM54Ma7YnyLgMy2rjISo2F/xXimtinQRySv2o=",
-        "usagesDigest": "Wg6GZmsBlXwo0OSHmoMDqlRn+J84HVPPhAtMB9vgTZc=",
+        "bzlTransitiveDigest": "FSsE0idtl48wsjoaGD908nx56D89INP7AFzHdtjzSR8=",
+        "usagesDigest": "v+xsr792TVNCoi6hPbnmMKbI5q8UiFr0XfJ04B9rxA0=",
         "recordedInputs": [
-          "REPO_MAPPING:windows+,bazel_tools bazel_tools",
+          "REPO_MAPPING:windows_support+,bazel_tools bazel_tools",
           "ENV:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA 1"
         ],
         "generatedRepoSpecs": {
           "msvc_runtime": {
-            "repoRuleId": "@@windows+//windows/private/extensions:msvc_runtime.bzl%_msvc_runtime_repository",
+            "repoRuleId": "@@windows_support+//windows/private/extensions:msvc_runtime.bzl%_msvc_runtime_repository",
             "attributes": {
               "msvc_version": "14.50.35717",
               "architectures": [
@@ -485,31 +485,22 @@
         }
       }
     },
-    "@@windows+//windows:extensions.bzl%windows_sdk": {
+    "@@windows_support+//windows:extensions.bzl%windows_sdk": {
       "general": {
-        "bzlTransitiveDigest": "+e6N3lqM54Ma7YnyLgMy2rjISo2F/xXimtinQRySv2o=",
-        "usagesDigest": "dmvEAFLOUc4Qa2pS5VGoobg2WfMRyehQcd3rZ5ikSWw=",
+        "bzlTransitiveDigest": "FSsE0idtl48wsjoaGD908nx56D89INP7AFzHdtjzSR8=",
+        "usagesDigest": "t7uBE8q4ARl3CJNmA/36CaFEcnHtO9Uwy1HUyY1SJxQ=",
         "recordedInputs": [
-          "REPO_MAPPING:windows+,bazel_tools bazel_tools"
+          "REPO_MAPPING:windows_support+,bazel_tools bazel_tools"
         ],
         "generatedRepoSpecs": {
           "windows_sdk": {
-            "repoRuleId": "@@windows+//windows/private/extensions:windows_sdk.bzl%_windows_sdk_repository",
+            "repoRuleId": "@@windows_support+//windows/private/extensions:windows_sdk.bzl%_windows_sdk_repository",
             "attributes": {
               "windows_sdk_version": "10.0.26100.7705",
               "windows_sdk_integrity": {
                 "Microsoft.Windows.SDK.CPP": "sha256-/0VWYL7gcadEcVqWZWZvopwHaBV509gVlZqe7FpVZCQ=",
                 "Microsoft.Windows.SDK.CPP.x64": "sha256-rWzpD/lAEGmdKVSLPCseUsieuBFD4hmRVdmlw4ABtSs=",
                 "Microsoft.Windows.SDK.CPP.arm64": "sha256-A7wMA9Q5zvhQdLvNQl+dXTptO0Z5Z6zSHaO6bf7q+mc="
-              },
-              "transformations": {
-                "base/c/Include/10.0.26100.0/shared/driverspecs.h": "base/c/Include/10.0.26100.0/shared/DriverSpecs.h",
-                "base/c/Include/10.0.26100.0/shared/specstrings.h": "base/c/Include/10.0.26100.0/shared/SpecStrings.h",
-                "base/c/Include/10.0.26100.0/um/ole2.h": "base/c/Include/10.0.26100.0/um/Ole2.h",
-                "base/c/Include/10.0.26100.0/um/olectl.h": "base/c/Include/10.0.26100.0/um/OleCtl.h",
-                "**/*.h": "lowercase",
-                "**/*.lib": "lowercase",
-                "**/*.Lib": "lowercase"
               },
               "architectures": [
                 "x64",
@@ -530,7 +521,7 @@
     }
   },
   "facts": {
-    "@@windows+//windows:extensions.bzl%msvc_runtime": {
+    "@@windows_support+//windows:extensions.bzl%msvc_runtime": {
       "visual_studio_installer_manifest_v1": {
         "integrity": "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8=",
         "request": {
