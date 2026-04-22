@@ -12,10 +12,17 @@ alias(
     tags = ["manual"],
 )
 
+alias(
+    name = "configured_windows_sdk_vfsoverlay",
+    actual = "@windows_sdk//:vfsoverlay",
+    tags = ["manual"],
+)
+
 build_test(
     name = "smoke_test",
     targets = [
         ":configured_msvc_runtime_repo",
         ":configured_windows_sdk_repo",
+        ":configured_windows_sdk_vfsoverlay",
     ],
 )
