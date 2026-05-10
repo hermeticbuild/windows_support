@@ -6,6 +6,7 @@ _DEFAULT_ARCHITECTURES = ["x64", "arm64"]
 _DEFAULT_VS_CHANNEL_URL = "https://aka.ms/vs/stable/channel"
 _INSTALLER_MANIFEST_DOWNLOADS_DIR = "installer_manifest_downloads"
 _INSTALLER_MANIFEST_FACTS_KEY = "visual_studio_installer_manifest_v1"
+_MSVC_RUNTIME_VISUAL_STUDIO_EULA_ENV = "BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA"
 _VISUAL_STUDIO_MANIFEST_COMPONENT = "Microsoft.VisualStudio.Manifests.VisualStudio"
 _ARCH_TO_MSVC_COMPONENT = {
     "arm": "Microsoft.VisualStudio.Component.VC.Tools.ARM",
@@ -15,9 +16,9 @@ _ARCH_TO_MSVC_COMPONENT = {
     "x86": "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
 }
 
-def _check_msvc_license_requirements(module_ctx):
-    approval = module_ctx.getenv("BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA")
-    if approval != 1 and approval != "1" and approval != "yes" and approval != "y" and approval != "true":
+def _check_msvc_license_requirements(ctx):
+    approval = ctx.getenv(_MSVC_RUNTIME_VISUAL_STUDIO_EULA_ENV)
+    if approval not in ["1", "yes", "y", "true"]:
         fail("""
             MSVC license check failed, to resolve that failure please:
               1. ensure that your machine is legally allowed to use the MSVC runtime
@@ -212,6 +213,8 @@ def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, archi
     )
 
 def _msvc_runtime_repository_impl(repository_ctx):
+    _check_msvc_license_requirements(repository_ctx)
+
     sysroot_dir = "sysroot"
 
     architectures = repository_ctx.attr.architectures
@@ -318,6 +321,7 @@ _MSVC_RUNTIME_REPOSITORY_ATTRS = _MSVC_RUNTIME_ATTR | {
 _msvc_runtime_repository = repository_rule(
     implementation = _msvc_runtime_repository_impl,
     attrs = _MSVC_RUNTIME_REPOSITORY_ATTRS,
+    environ = [_MSVC_RUNTIME_VISUAL_STUDIO_EULA_ENV],
 )
 
 def _read_configure_tag(module_ctx):
@@ -345,7 +349,6 @@ def _read_configure_tag(module_ctx):
 
 def _msvc_runtime_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
-    _check_msvc_license_requirements(module_ctx)
 
     installer_manifest = _resolve_installer_manifest_from_module_facts(
         module_ctx,
