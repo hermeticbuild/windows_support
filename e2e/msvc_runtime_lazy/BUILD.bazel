@@ -1,0 +1,12 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+genrule(
+    name = "ordinary_project_artifact",
+    outs = ["ordinary_project_artifact.txt"],
+    cmd = "echo ordinary project artifact > $@",
+)
+
+build_test(
+    name = "registered_msvc_runtime_extension_without_eula_test",
+    targets = [":ordinary_project_artifact"],
+)
