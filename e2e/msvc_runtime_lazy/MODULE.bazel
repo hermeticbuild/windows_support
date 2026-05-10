@@ -1,0 +1,24 @@
+module(
+    name = "msvc_runtime_lazy_e2e",
+    version = "",
+)
+
+bazel_dep(
+    name = "windows_support",
+    version = "0.0.0",
+    dev_dependency = True,
+)
+bazel_dep(name = "bazel_skylib", version = "1.9.0", dev_dependency = True)
+
+local_path_override(
+    module_name = "windows_support",
+    path = "../..",
+)
+
+msvc_runtime = use_extension("@windows_support//windows:extensions.bzl", "msvc_runtime")
+msvc_runtime.configure(
+    msvc_version = "14.50.35717",
+    visual_studio_installer_manifest_integrity = "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8=",
+    visual_studio_installer_manifest_url = "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman",
+)
+use_repo(msvc_runtime, "msvc_runtime")
