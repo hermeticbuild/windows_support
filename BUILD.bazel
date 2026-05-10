@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@package_metadata//licenses/rules:license.bzl", "license")
 load("@package_metadata//purl:purl.bzl", "purl")
 load("@package_metadata//rules:package_metadata.bzl", "package_metadata")
@@ -16,6 +17,14 @@ license(
     name = "license",
     kind = "@package_metadata//licenses/spdx:Apache-2.0",
     text = "LICENSE",
+)
+
+build_test(
+    name = "public_starlark_api_test",
+    targets = [
+        "//windows:extensions",
+        "//windows:repositories",
+    ],
 )
 
 # gazelle:map_kind bzl_library bzl_library @bazel_lib//:bzl_library.bzl
