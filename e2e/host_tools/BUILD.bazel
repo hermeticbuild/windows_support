@@ -1,0 +1,26 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+TOOLS = {
+    "msvc_tools": "@msvc_runtime//:msvc_tools_x64_x64",
+    "winsdk_bin": "@windows_sdk//:winsdk_bin_x64",
+}
+
+build_test(
+    name = "host_tools_build_test",
+    targets = TOOLS.values(),
+)
+
+[
+    genrule(
+        name = name + "_nonempty",
+        srcs = [label],
+        outs = [name + "_count.txt"],
+        cmd = "n=0; for f in $(SRCS); do n=$$((n+1)); done; test $$n -gt 0 || { echo 'no files in %s'; exit 1; }; echo $$n > $@" % label,
+    )
+    for name, label in TOOLS.items()
+]
+
+build_test(
+    name = "host_tools_nonempty_test",
+    targets = [name + "_nonempty" for name in TOOLS],
+)
