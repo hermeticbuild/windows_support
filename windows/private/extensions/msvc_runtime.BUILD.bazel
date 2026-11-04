@@ -130,6 +130,18 @@ alias(
     }),
 )
 
+[
+    filegroup(
+        name = "msvc_tools_{}_{}".format(host, target),
+        srcs = glob(
+            ["__MSVC_RUNTIME_DIR__/Contents/VC/Tools/MSVC/__MSVC_VERSION__/bin/Host{}/{}/**".format(host, target)],
+            allow_empty = True,
+        ),
+    )
+    for host in ("x64", "arm64")
+    for target in ("x64", "arm64")
+]
+
 filegroup(
     name = "all_files",
     srcs = glob(

@@ -28,10 +28,13 @@ def _keep_only_children(repository_ctx, directory, child_names):
             continue
         repository_ctx.delete(entry)
 
-def _keep_exposed_windows_sdk_files(repository_ctx, sysroot_dir, include_version, architectures):
+def _keep_exposed_windows_sdk_files(repository_ctx, sysroot_dir, include_version, architectures, host_tools):
     _keep_only_children(repository_ctx, repository_ctx.path(sysroot_dir), ["base"] + architectures)
     _keep_only_children(repository_ctx, repository_ctx.path("{}/base".format(sysroot_dir)), ["c"])
-    _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c".format(sysroot_dir)), ["Include"])
+    _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c".format(sysroot_dir)), ["Include", "bin"] if host_tools else ["Include"])
+    if host_tools:
+        _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/bin".format(sysroot_dir)), [include_version])
+        _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/bin/{}".format(sysroot_dir, include_version)), host_tools)
     _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/Include".format(sysroot_dir)), [include_version])
     _keep_only_children(
         repository_ctx,
@@ -226,7 +229,7 @@ def _windows_sdk_repository_impl(repository_ctx):
     )
 
     _apply_transformations(repository_ctx)
-    _keep_exposed_windows_sdk_files(repository_ctx, _SYSROOT_DIR, include_version, requested_architectures)
+    _keep_exposed_windows_sdk_files(repository_ctx, _SYSROOT_DIR, include_version, requested_architectures, repository_ctx.attr.host_tools)
 
     repository_ctx.file(
         "versions.bzl",
@@ -262,6 +265,8 @@ WINDOWS_SDK_INCLUDE_VERSION = {windows_sdk_include_version}
             {"windows_sdk_integrity": integrity_by_package},
         ),
     )
+
+_HOST_TOOL_ARCHITECTURES = ["x64", "arm64"]
 
 _WINDOWS_SDK_ATTR = {
     "architectures": attr.string_list(
@@ -299,6 +304,9 @@ _WINDOWS_SDK_ATTR = {
 }
 
 _WINDOWS_SDK_REPOSITORY_ATTRS = _WINDOWS_SDK_ATTR | {
+    "host_tools": attr.string_list(
+        doc = "Host architectures whose SDK tools (rc.exe, mt.exe) are kept under base/c/bin/<version>/<host>",
+    ),
     "_build_file": attr.label(
         allow_single_file = True,
         default = ":windows_sdk.BUILD.bazel",
@@ -331,6 +339,17 @@ def _read_configure_tag(module_ctx):
 
     fail("Missing windows_sdk.configure(...): set windows_sdk.configure(...) in your MODULE.bazel")
 
+def _read_host_tools(module_ctx):
+    hosts = []
+    for mod in module_ctx.modules:
+        for tag in mod.tags.host_tools:
+            for host in tag.hosts:
+                if host not in _HOST_TOOL_ARCHITECTURES:
+                    fail("windows_sdk.host_tools: unsupported host {}, expected one of {}".format(host, _HOST_TOOL_ARCHITECTURES))
+                if host not in hosts:
+                    hosts.append(host)
+    return sorted(hosts)
+
 def _windows_sdk_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
 
@@ -341,6 +360,7 @@ def _windows_sdk_extension_impl(module_ctx):
         windows_sdk_integrity = config.windows_sdk_integrity,
         transformations = config.transformations,
         architectures = config.architectures,
+        host_tools = _read_host_tools(module_ctx),
     )
 
     if module_ctx.root_module_has_non_dev_dependency:
@@ -358,6 +378,15 @@ windows_sdk = module_extension(
     implementation = _windows_sdk_extension_impl,
     tag_classes = {
         "configure": tag_class(attrs = _WINDOWS_SDK_ATTR),
+        "host_tools": tag_class(
+            attrs = {
+                "hosts": attr.string_list(
+                    mandatory = True,
+                    doc = "Host architectures (`x64`, `arm64`) whose SDK tools (rc.exe, mt.exe) are kept. Values from all modules are combined.",
+                ),
+            },
+            doc = "Keeps the Windows SDK tools for the given hosts, exposed as `winsdk_bin_<host>`.",
+        ),
     },
     doc = "Windows SDK extension backed by public NuGet packages.",
 )
