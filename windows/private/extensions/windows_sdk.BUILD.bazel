@@ -189,3 +189,14 @@ filegroup(
         allow_empty = True,
     ),
 )
+
+[
+    filegroup(
+        name = "winsdk_bin_" + host,
+        srcs = glob(
+            ["__WINSDK_DIR__/base/c/bin/__WINSDK_INCLUDE_VERSION__/{}/**".format(host)],
+            allow_empty = True,
+        ),
+    )
+    for host in ("x64", "arm64")
+]

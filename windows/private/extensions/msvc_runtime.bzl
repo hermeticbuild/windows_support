@@ -241,7 +241,7 @@ def _discover_redist_version(repository_ctx, sysroot_dir):
 def _redist_architectures(architectures):
     return [arch for arch in architectures if _ARCH_TO_REDIST_PACKAGE.get(arch)]
 
-def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version):
+def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version, host_tools):
     sysroot_path = repository_ctx.path(sysroot_dir)
     contents_dir = repository_ctx.path("{}/Contents".format(sysroot_dir))
     vc_dir = repository_ctx.path("{}/Contents/VC".format(sysroot_dir))
@@ -256,13 +256,18 @@ def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, archi
     _keep_only_children(
         repository_ctx,
         repository_ctx.path("{}/Contents/VC/Tools/MSVC/{}".format(sysroot_dir, msvc_version)),
-        ["include", "lib"],
+        ["include", "lib", "bin"] if host_tools else ["include", "lib"],
     )
     _keep_only_children(
         repository_ctx,
         repository_ctx.path("{}/Contents/VC/Tools/MSVC/{}/lib".format(sysroot_dir, msvc_version)),
         architectures,
     )
+    if host_tools:
+        bin_dir = "{}/Contents/VC/Tools/MSVC/{}/bin".format(sysroot_dir, msvc_version)
+        _keep_only_children(repository_ctx, repository_ctx.path(bin_dir), ["Host" + host for host in host_tools])
+        for host in host_tools:
+            _keep_only_children(repository_ctx, repository_ctx.path("{}/Host{}".format(bin_dir, host)), architectures)
 
     if redist_version:
         redist_architectures = _redist_architectures(architectures)
@@ -348,7 +353,7 @@ def _msvc_runtime_repository_impl(repository_ctx):
     redist_architectures = _redist_architectures(architectures)
     if redist_architectures and not redist_version:
         fail("failed to find Contents/VC/Redist/MSVC/<version> in extracted MSVC payloads for architectures {}".format(redist_architectures))
-    _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version)
+    _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version, repository_ctx.attr.host_tools)
 
     repository_ctx.file(
         "versions.bzl",
@@ -394,6 +399,8 @@ VC_REDIST_VERSION = {vc_redist_version}
             ),
         )
 
+_HOST_TOOL_ARCHITECTURES = ["x64", "arm64"]
+
 _MSVC_RUNTIME_ATTR = {
     "architectures": attr.string_list(
         default = _DEFAULT_ARCHITECTURES,
@@ -414,6 +421,9 @@ _MSVC_RUNTIME_ATTR = {
 }
 
 _MSVC_RUNTIME_REPOSITORY_ATTRS = _MSVC_RUNTIME_ATTR | {
+    "host_tools": attr.string_list(
+        doc = "Host architectures whose compiler tools are kept under Contents/VC/Tools/MSVC/<msvc_version>/bin/Host<host>",
+    ),
     "_build_file": attr.label(
         allow_single_file = True,
         default = ":msvc_runtime.BUILD.bazel",
@@ -447,8 +457,20 @@ def _read_configure_tag(module_ctx):
 
     fail("Missing msvc_runtime.configure(...): set msvc_runtime.configure(...) in your MODULE.bazel")
 
+def _read_host_tools(module_ctx):
+    hosts = []
+    for mod in module_ctx.modules:
+        for tag in mod.tags.host_tools:
+            for host in tag.hosts:
+                if host not in _HOST_TOOL_ARCHITECTURES:
+                    fail("msvc_runtime.host_tools: unsupported host {}, expected one of {}".format(host, _HOST_TOOL_ARCHITECTURES))
+                if host not in hosts:
+                    hosts.append(host)
+    return sorted(hosts)
+
 def _msvc_runtime_extension_impl(module_ctx):
     config = _read_configure_tag(module_ctx)
+    host_tools = _read_host_tools(module_ctx)
 
     installer_manifest = _resolve_installer_manifest_from_module_facts(
         module_ctx,
@@ -463,6 +485,7 @@ def _msvc_runtime_extension_impl(module_ctx):
         name = repository_name,
         msvc_version = config.msvc_version,
         architectures = config.architectures,
+        host_tools = host_tools,
         installer_manifest_url = installer_manifest["url"],
         installer_manifest_integrity = installer_manifest["integrity"],
     )
@@ -496,6 +519,15 @@ msvc_runtime = module_extension(
                 doc = "Optional SRI integrity for the downloaded Visual Studio installer manifest.",
             ),
         }),
+        "host_tools": tag_class(
+            attrs = {
+                "hosts": attr.string_list(
+                    mandatory = True,
+                    doc = "Host architectures (`x64`, `arm64`) whose compiler tools (cl.exe, link.exe) are kept in the repository. Values from all modules are combined.",
+                ),
+            },
+            doc = "Keeps the MSVC compiler tools for the given hosts, exposed as `msvc_tools_<host>_<target>`.",
+        ),
     },
     doc = "MSVC runtime extension.",
 )
