@@ -288,6 +288,80 @@ def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, archi
             redist_architectures,
         )
 
+# Parts of the MSVC tree that toolchains put on their include and library
+# search paths. Copying them when the repository is fetched lets a toolchain
+# depend on them as source directories instead of copying them in a build action.
+_SUBSET_HEADERS = {
+    "com_support_include": [
+        "comdef.h",
+        "comdefsp.h",
+        "comip.h",
+        "comutil.h",
+    ],
+    "vcruntime_include": [
+        "CodeAnalysis/sourceannotations.h",
+        "concurrencysal.h",
+        "crtdefs.h",
+        "eh.h",
+        "ehdata.h",
+        "ehdata_forceinclude.h",
+        "ehdata_values.h",
+        "excpt.h",
+        "sal.h",
+        "setjmp.h",
+        "setjmpex.h",
+        "threads.h",
+        "vadefs.h",
+        "vcruntime.h",
+        "vcruntime_exception.h",
+        "vcruntime_new.h",
+        "vcruntime_new_debug.h",
+        "vcruntime_string.h",
+        "vcruntime_startup.h",
+        "vcruntime_typeinfo.h",
+    ],
+}
+
+_SUBSET_LIBRARIES = {
+    "com": [
+        "comsupp.lib",
+        "comsuppw.lib",
+    ],
+    "common": [
+        "exe_initialize_mta.lib",
+        "iso_stdio_wide_specifiers.lib",
+        "legacy_stdio_definitions.lib",
+        "legacy_stdio_wide_specifiers.lib",
+        "oldnames.lib",
+    ],
+    "dynamic": [
+        "msvcprt.lib",
+        "msvcrt.lib",
+        "vcruntime.lib",
+    ],
+    "static": [
+        "libcmt.lib",
+        "libcpmt.lib",
+        "libvcruntime.lib",
+    ],
+}
+
+def _write_subsets(repository_ctx, sysroot_dir, msvc_version, architectures):
+    msvc_dir = "{}/Contents/VC/Tools/MSVC/{}".format(sysroot_dir, msvc_version)
+    copies = {}
+    for subset, headers in _SUBSET_HEADERS.items():
+        for header in headers:
+            copies["subsets/{}/{}".format(subset, header)] = "{}/include/{}".format(msvc_dir, header)
+    for arch in architectures:
+        if arch not in ["x64", "arm64"]:
+            continue
+        for subset, libraries in _SUBSET_LIBRARIES.items():
+            for library in libraries:
+                copies["subsets/lib/{}/{}/{}".format(arch, subset, library)] = "{}/lib/{}/{}".format(msvc_dir, arch, library)
+    for dst, src in copies.items():
+        if repository_ctx.path(src).exists:
+            repository_ctx.file(dst, repository_ctx.read(src), executable = False, legacy_utf8 = False)
+
 def _msvc_runtime_repository_impl(repository_ctx):
     _check_msvc_license_requirements(repository_ctx)
 
@@ -349,6 +423,7 @@ def _msvc_runtime_repository_impl(repository_ctx):
     if redist_architectures and not redist_version:
         fail("failed to find Contents/VC/Redist/MSVC/<version> in extracted MSVC payloads for architectures {}".format(redist_architectures))
     _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version)
+    _write_subsets(repository_ctx, sysroot_dir, msvc_version, architectures)
 
     repository_ctx.file(
         "versions.bzl",
