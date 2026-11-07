@@ -22,3 +22,10 @@ bzl_library(
         "@bazel_tools//tools/build_defs/repo:utils.bzl",
     ],
 )
+
+bzl_library(
+    name = "source_directory_headers",
+    srcs = ["source_directory_headers.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["@bazel_skylib//rules/directory:providers"],
+)

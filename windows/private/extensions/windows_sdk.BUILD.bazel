@@ -2,6 +2,7 @@
 
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
+load("@windows_support//windows:source_directory_headers.bzl", "source_directory_headers")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,9 +39,20 @@ directory(
 )
 
 subdirectory(
-    name = "winsdk_ucrt_include",
+    name = "winsdk_ucrt_include_directory",
     parent = ":winsdk_ucrt_include_files",
     path = "__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/ucrt",
+)
+
+filegroup(
+    name = "winsdk_ucrt_include_source_directory",
+    srcs = ["__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/ucrt"],
+)
+
+source_directory_headers(
+    name = "winsdk_ucrt_include",
+    directory = ":winsdk_ucrt_include_directory",
+    source_directory = ":winsdk_ucrt_include_source_directory",
 )
 
 directory(
@@ -52,9 +64,20 @@ directory(
 )
 
 subdirectory(
-    name = "winsdk_shared_include",
+    name = "winsdk_shared_include_directory",
     parent = ":winsdk_shared_include_files",
     path = "__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/shared",
+)
+
+filegroup(
+    name = "winsdk_shared_include_source_directory",
+    srcs = ["__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/shared"],
+)
+
+source_directory_headers(
+    name = "winsdk_shared_include",
+    directory = ":winsdk_shared_include_directory",
+    source_directory = ":winsdk_shared_include_source_directory",
 )
 
 directory(
@@ -66,9 +89,20 @@ directory(
 )
 
 subdirectory(
-    name = "winsdk_um_include",
+    name = "winsdk_um_include_directory",
     parent = ":winsdk_um_include_files",
     path = "__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/um",
+)
+
+filegroup(
+    name = "winsdk_um_include_source_directory",
+    srcs = ["__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/um"],
+)
+
+source_directory_headers(
+    name = "winsdk_um_include",
+    directory = ":winsdk_um_include_directory",
+    source_directory = ":winsdk_um_include_source_directory",
 )
 
 directory(
@@ -80,9 +114,20 @@ directory(
 )
 
 subdirectory(
-    name = "winsdk_winrt_include",
+    name = "winsdk_winrt_include_directory",
     parent = ":winsdk_winrt_include_files",
     path = "__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/winrt",
+)
+
+filegroup(
+    name = "winsdk_winrt_include_source_directory",
+    srcs = ["__WINSDK_DIR__/base/c/Include/__WINSDK_INCLUDE_VERSION__/winrt"],
+)
+
+source_directory_headers(
+    name = "winsdk_winrt_include",
+    directory = ":winsdk_winrt_include_directory",
+    source_directory = ":winsdk_winrt_include_source_directory",
 )
 
 directory(
