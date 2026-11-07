@@ -3,6 +3,7 @@ load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@msvc_runtime//:versions.bzl", "MSVC_COMPATIBILITY_VERSION", "MSVC_TOOLSET_VERSION", "VC_REDIST_VERSION")
 load("@windows_sdk//:versions.bzl", "WINDOWS_SDK_INCLUDE_VERSION", "WINDOWS_SDK_VERSION")
+load(":source_directory_test.bzl", "source_directory_test")
 
 alias(
     name = "configured_msvc_runtime_repo",
@@ -50,3 +51,11 @@ diff_test(
     file1 = "expected_versions.txt",
     file2 = ":resolved_versions",
 )
+
+[
+    source_directory_test(
+        name = "winsdk_{}_include_test".format(name),
+        target_under_test = "@windows_sdk//:winsdk_{}_include".format(name),
+    )
+    for name in ("ucrt", "shared", "um", "winrt")
+]
