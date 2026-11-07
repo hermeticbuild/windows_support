@@ -22,11 +22,38 @@ alias(
     tags = ["manual"],
 )
 
+alias(
+    name = "configured_msvc_vcruntime_include",
+    actual = "@msvc_runtime//:msvc_vcruntime_include",
+    tags = ["manual"],
+)
+
+alias(
+    name = "configured_msvc_com_support_include",
+    actual = "@msvc_runtime//:msvc_com_support_include",
+    tags = ["manual"],
+)
+
+[
+    alias(
+        name = "configured_msvc_{}_libraries".format(subset),
+        actual = "@msvc_runtime//:msvc_{}_libraries".format(subset),
+        tags = ["manual"],
+    )
+    for subset in ("com", "common", "dynamic", "static")
+]
+
 build_test(
     name = "smoke_test",
     targets = [
         ":configured_msvc_runtime_repo",
         ":configured_msvc_runtime_vc_redist",
+        ":configured_msvc_vcruntime_include",
+        ":configured_msvc_com_support_include",
+        ":configured_msvc_com_libraries",
+        ":configured_msvc_common_libraries",
+        ":configured_msvc_dynamic_libraries",
+        ":configured_msvc_static_libraries",
         ":configured_windows_sdk_repo",
     ],
 )
