@@ -23,6 +23,7 @@ build_test(
     name = "public_starlark_api_test",
     targets = [
         "//windows:extensions",
+        "//windows/extensions:msix",
         "//windows:repositories",
     ],
 )

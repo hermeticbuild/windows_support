@@ -22,3 +22,10 @@ bzl_library(
         "@bazel_tools//tools/build_defs/repo:utils.bzl",
     ],
 )
+
+bzl_library(
+    name = "msix",
+    srcs = ["msix.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["//windows/private/extensions/msix:msix_package"],
+)

@@ -9,6 +9,10 @@ examples export-ignore
 # Keep the byte-for-byte version fixture stable on Windows checkouts.
 e2e/smoke/expected_versions.txt text eol=lf
 
+# The MSIX package fixtures are compared byte for byte with the unpacked packages.
+e2e/msix_package/app/** -text
+e2e/msix_package/manifests/** -text
+
 # Occasionally there's a need to "stamp" the release version into a file
 # See https://blog.aspect.build/releasing-bazel-rulesets-rust for details if you need this.
 # mylang/version.bzl export-subst

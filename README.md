@@ -86,6 +86,31 @@ Notes:
 - the redist DLLs only exist for the `x64`, `x86` and `arm64` architectures (no VC redistributable exists for `arm` or `arm64ec`, the latter uses the x64/arm64 redists)
 - only the desktop flavor of the redist is exposed, the `onecore` flavor is not kept
 
+## MSIX packages
+
+`msix_package` packs files into an MSIX (or APPX) package with `makemsix pack -d <layout> -p <package>`, `makemsix` being built from source by the [`msix_packaging`](https://registry.bazel.build/modules/msix_packaging) module. It runs on Linux, macOS and Windows.
+
+The package content (its "layout") is a single directory with an `AppxManifest.xml` at its root, a tree artifact or a source directory, packaged as is:
+
+```starlark
+load("@windows_support//windows:msix.bzl", "msix_package")
+
+msix_package(
+    name = "my_app",
+    layout_dir = ":my_app_layout",
+    # Defaults to `<name>.msix`.
+    out = "my_app.msix",
+)
+```
+
+Notes:
+
+- inputs are only read, their permissions and timestamps are never modified, and the package does not record file permissions
+- the layout must not contain symlinked directories, makemsix fails on them
+- a source directory is packaged with everything it contains on disk, prefer a tree artifact
+- packages are not reproducible: makemsix stamps entries with the current time, and orders them by the modification time of the layout files
+- packages are not signed, sign them with `signtool` before installing them
+
 ## Limitations
 
 Sadly, that module is not perfect, there are several major limitations:
