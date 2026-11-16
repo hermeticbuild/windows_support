@@ -1,0 +1,55 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+# Checks that `include_binaries = True` keeps the tools together with the DLLs they load
+# from their own directory (everything else they import is a Windows system DLL).
+MSVC_TOOL_FILES = [
+    "cl.exe",
+    "c1.dll",
+    "c1xx.dll",
+    "c2.dll",
+    "link.exe",
+    "lib.exe",
+    "mspdb140.dll",
+    "mspdbcore.dll",
+    "msvcp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+]
+
+TOOLS = {
+    # Cross compiler, does not reuse the DLLs of the native Hostx64/x64 directory.
+    "msvc_tools_x64_arm64": (
+        "@msvc_runtime//:msvc_tools_x64_arm64",
+        MSVC_TOOL_FILES,
+    ),
+    "msvc_tools_x64_x64": (
+        "@msvc_runtime//:msvc_tools_x64_x64",
+        MSVC_TOOL_FILES,
+    ),
+    "winsdk_bin_x64": (
+        "@windows_sdk//:winsdk_bin_x64",
+        [
+            "rc.exe",
+            "rcdll.dll",
+            "mt.exe",
+        ],
+    ),
+}
+
+[
+    genrule(
+        name = name + "_check",
+        srcs = [label],
+        outs = [name + "_check.txt"],
+        cmd = "for want in {}; do found=; for f in $(SRCS); do [ \"$${{f##*/}}\" = $$want ] && found=1; done; [ -n \"$$found\" ] || {{ echo 'missing '$$want' in {}'; exit 1; }}; done; touch $@".format(
+            " ".join(files),
+            label,
+        ),
+    )
+    for name, (label, files) in TOOLS.items()
+]
+
+build_test(
+    name = "include_binaries_test",
+    targets = [name + "_check" for name in TOOLS],
+)

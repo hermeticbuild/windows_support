@@ -86,6 +86,31 @@ Notes:
 - the redist DLLs only exist for the `x64`, `x86` and `arm64` architectures (no VC redistributable exists for `arm` or `arm64ec`, the latter uses the x64/arm64 redists)
 - only the desktop flavor of the redist is exposed, the `onecore` flavor is not kept
 
+### Tool binaries
+
+By default only headers and libraries are kept. Set `include_binaries = True` to also keep the tools:
+
+```starlark
+msvc_runtime.configure(
+  msvc_version = "14.50.35717",
+  include_binaries = True,
+)
+
+windows_sdk.configure(
+    windows_sdk_version = "10.0.26100.7705",
+    include_binaries = True,
+)
+```
+
+- `@msvc_runtime//:msvc_tools_<host>_<target>` — `Contents/VC/Tools/MSVC/<version>/bin/Host<host>/<target>` (`cl.exe`, `link.exe`, `lib.exe`, ...)
+- `@windows_sdk//:winsdk_bin_<host>` — `base/c/bin/<version>/<host>` (`rc.exe`, `mt.exe`, ...)
+
+Both follow the `architectures` attribute: `<host>` and `<target>` are taken from it, so list the build machine architecture there too.
+A target is empty if the downloaded packages do not ship that host.
+
+The tools are not statically linked. The DLLs they need besides Windows system DLLs (`c1.dll`, `c2.dll`, `mspdb140.dll`, `vcruntime140.dll`, `msvcp140.dll`, `rcdll.dll`, ...) ship in the same directory, and Windows loads them from the directory of the executable.
+So depend on the whole filegroup (e.g. as `tools` of an action) and run the executable from its location in it, do not copy it out alone.
+
 ## Limitations
 
 Sadly, that module is not perfect, there are several major limitations:

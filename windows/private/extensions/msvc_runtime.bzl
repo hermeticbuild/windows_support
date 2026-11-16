@@ -241,7 +241,7 @@ def _discover_redist_version(repository_ctx, sysroot_dir):
 def _redist_architectures(architectures):
     return [arch for arch in architectures if _ARCH_TO_REDIST_PACKAGE.get(arch)]
 
-def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version):
+def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version, include_binaries):
     sysroot_path = repository_ctx.path(sysroot_dir)
     contents_dir = repository_ctx.path("{}/Contents".format(sysroot_dir))
     vc_dir = repository_ctx.path("{}/Contents/VC".format(sysroot_dir))
@@ -256,13 +256,20 @@ def _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, archi
     _keep_only_children(
         repository_ctx,
         repository_ctx.path("{}/Contents/VC/Tools/MSVC/{}".format(sysroot_dir, msvc_version)),
-        ["include", "lib"],
+        ["include", "lib", "bin"] if include_binaries else ["include", "lib"],
     )
     _keep_only_children(
         repository_ctx,
         repository_ctx.path("{}/Contents/VC/Tools/MSVC/{}/lib".format(sysroot_dir, msvc_version)),
         architectures,
     )
+    if include_binaries:
+        # Both the host and the target directory follow `architectures`:
+        # bin/Host<host>/<target> for every host and target in it.
+        bin_dir = "{}/Contents/VC/Tools/MSVC/{}/bin".format(sysroot_dir, msvc_version)
+        _keep_only_children(repository_ctx, repository_ctx.path(bin_dir), ["Host" + arch for arch in architectures])
+        for host in architectures:
+            _keep_only_children(repository_ctx, repository_ctx.path("{}/Host{}".format(bin_dir, host)), architectures)
 
     if redist_version:
         redist_architectures = _redist_architectures(architectures)
@@ -348,7 +355,7 @@ def _msvc_runtime_repository_impl(repository_ctx):
     redist_architectures = _redist_architectures(architectures)
     if redist_architectures and not redist_version:
         fail("failed to find Contents/VC/Redist/MSVC/<version> in extracted MSVC payloads for architectures {}".format(redist_architectures))
-    _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version)
+    _keep_exposed_runtime_files(repository_ctx, sysroot_dir, msvc_version, architectures, redist_version, repository_ctx.attr.include_binaries)
 
     repository_ctx.file(
         "versions.bzl",
@@ -411,6 +418,10 @@ _MSVC_RUNTIME_ATTR = {
     "installer_manifest_sha256": attr.string(
         doc = "Optional integrity (as sha256 hash) of the resolved/specified Visual Studio installer manifest",
     ),
+    "include_binaries": attr.bool(
+        default = False,
+        doc = "Also keep the MSVC tools (cl.exe, link.exe, lib.exe, ...) under Contents/VC/Tools/MSVC/<msvc_version>/bin/Host<host>/<target> for every host and target in `architectures`, exposed as `msvc_tools_<host>_<target>`.",
+    ),
 }
 
 _MSVC_RUNTIME_REPOSITORY_ATTRS = _MSVC_RUNTIME_ATTR | {
@@ -463,6 +474,7 @@ def _msvc_runtime_extension_impl(module_ctx):
         name = repository_name,
         msvc_version = config.msvc_version,
         architectures = config.architectures,
+        include_binaries = config.include_binaries,
         installer_manifest_url = installer_manifest["url"],
         installer_manifest_integrity = installer_manifest["integrity"],
     )

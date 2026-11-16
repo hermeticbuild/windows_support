@@ -28,10 +28,13 @@ def _keep_only_children(repository_ctx, directory, child_names):
             continue
         repository_ctx.delete(entry)
 
-def _keep_exposed_windows_sdk_files(repository_ctx, sysroot_dir, include_version, architectures):
+def _keep_exposed_windows_sdk_files(repository_ctx, sysroot_dir, include_version, architectures, include_binaries):
     _keep_only_children(repository_ctx, repository_ctx.path(sysroot_dir), ["base"] + architectures)
     _keep_only_children(repository_ctx, repository_ctx.path("{}/base".format(sysroot_dir)), ["c"])
-    _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c".format(sysroot_dir)), ["Include"])
+    _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c".format(sysroot_dir)), ["Include", "bin"] if include_binaries else ["Include"])
+    if include_binaries:
+        _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/bin".format(sysroot_dir)), [include_version])
+        _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/bin/{}".format(sysroot_dir, include_version)), architectures)
     _keep_only_children(repository_ctx, repository_ctx.path("{}/base/c/Include".format(sysroot_dir)), [include_version])
     _keep_only_children(
         repository_ctx,
@@ -226,7 +229,7 @@ def _windows_sdk_repository_impl(repository_ctx):
     )
 
     _apply_transformations(repository_ctx)
-    _keep_exposed_windows_sdk_files(repository_ctx, _SYSROOT_DIR, include_version, requested_architectures)
+    _keep_exposed_windows_sdk_files(repository_ctx, _SYSROOT_DIR, include_version, requested_architectures, repository_ctx.attr.include_binaries)
 
     repository_ctx.file(
         "versions.bzl",
@@ -267,6 +270,10 @@ _WINDOWS_SDK_ATTR = {
     "architectures": attr.string_list(
         default = _DEFAULT_ARCHITECTURES,
         doc = "Architectures of the Windows SDK to download additionally to the base",
+    ),
+    "include_binaries": attr.bool(
+        default = False,
+        doc = "Also keep the Windows SDK tools (rc.exe, mt.exe, ...) under base/c/bin/<version>/<host> for every host in `architectures`, exposed as `winsdk_bin_<host>`.",
     ),
     "windows_sdk_version": attr.string(
         doc = "Windows SDK NuGet package version, e.g. `10.0.26100.7705`",
@@ -341,6 +348,7 @@ def _windows_sdk_extension_impl(module_ctx):
         windows_sdk_integrity = config.windows_sdk_integrity,
         transformations = config.transformations,
         architectures = config.architectures,
+        include_binaries = config.include_binaries,
     )
 
     if module_ctx.root_module_has_non_dev_dependency:

@@ -234,3 +234,15 @@ filegroup(
         allow_empty = True,
     ),
 )
+
+# rc.exe loads rcdll.dll from its own directory, so depend on the whole filegroup.
+[
+    filegroup(
+        name = "winsdk_bin_" + host,
+        srcs = glob(
+            ["__WINSDK_DIR__/base/c/bin/__WINSDK_INCLUDE_VERSION__/{}/**".format(host)],
+            allow_empty = True,
+        ),
+    )
+    for host in ("x64", "x86", "arm64")
+]
