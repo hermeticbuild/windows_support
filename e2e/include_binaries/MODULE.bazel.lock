@@ -448,8 +448,8 @@
     },
     "@@windows_support+//windows:extensions.bzl%msvc_runtime": {
       "general": {
-        "bzlTransitiveDigest": "5ZaX6A+CRySQ/ozENDXj3aOogVpM8Cpb/hqj/98+2NQ=",
-        "usagesDigest": "hlGhcagIJKFzxklybfQ8ufc1qgX4cVSLv5PlZ1xmNeQ=",
+        "bzlTransitiveDigest": "KFAL/DwM0PjqKOzGD8/id2IzfB4w4qei2ejhl6xJROk=",
+        "usagesDigest": "46wFYgZ+juLK7WPHtAYaH5ABJjDS/y0Bsg71eZIBz4o=",
         "recordedInputs": [
           "REPO_MAPPING:windows_support+,bazel_tools bazel_tools"
         ],
@@ -462,9 +462,7 @@
                 "x64",
                 "arm64"
               ],
-              "host_tools": [
-                "x64"
-              ],
+              "include_binaries": true,
               "installer_manifest_url": "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman",
               "installer_manifest_integrity": "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8="
             }
@@ -482,8 +480,8 @@
     },
     "@@windows_support+//windows:extensions.bzl%windows_sdk": {
       "general": {
-        "bzlTransitiveDigest": "5ZaX6A+CRySQ/ozENDXj3aOogVpM8Cpb/hqj/98+2NQ=",
-        "usagesDigest": "HHg2goG0Yu1tTCv6t6fX2uJnj18Y8tHy1hnfMsKotUw=",
+        "bzlTransitiveDigest": "KFAL/DwM0PjqKOzGD8/id2IzfB4w4qei2ejhl6xJROk=",
+        "usagesDigest": "ku7agvGm13njFkC9Aez5DvuymvA7KNk7pqtRjILPSbk=",
         "recordedInputs": [
           "REPO_MAPPING:windows_support+,bazel_tools bazel_tools"
         ],
@@ -510,9 +508,7 @@
                 "x64",
                 "arm64"
               ],
-              "host_tools": [
-                "x64"
-              ]
+              "include_binaries": true
             }
           }
         },

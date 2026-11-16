@@ -130,6 +130,9 @@ alias(
     }),
 )
 
+# The tools load their non-system DLLs (c1.dll, c2.dll, mspdb*.dll, vcruntime140.dll,
+# msvcp140.dll, ...) from their own directory, so depend on the whole filegroup and run
+# them from where they are.
 [
     filegroup(
         name = "msvc_tools_{}_{}".format(host, target),
@@ -138,8 +141,8 @@ alias(
             allow_empty = True,
         ),
     )
-    for host in ("x64", "arm64")
-    for target in ("x64", "arm64")
+    for host in ("x64", "x86", "arm64")
+    for target in ("x64", "x86", "arm", "arm64")
 ]
 
 filegroup(

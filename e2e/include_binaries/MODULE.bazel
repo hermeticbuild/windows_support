@@ -12,15 +12,16 @@ local_path_override(
 
 msvc_runtime = use_extension("@windows_support//windows:extensions.bzl", "msvc_runtime")
 msvc_runtime.configure(
+    include_binaries = True,
     msvc_version = "14.50.35717",
     visual_studio_installer_manifest_integrity = "sha256-qOhU+p8/uurCfXME4pfxZg1xN0ATid61fPeYPzPBb+8=",
     visual_studio_installer_manifest_url = "https://download.visualstudio.microsoft.com/download/pr/fdc37f6e-59f6-4054-838a-b476eeaa6ec3/1d82370739911457e0a2f6be15d8b5f569531b352b2eabb961429eea1e99e356/VisualStudio.vsman",
 )
-msvc_runtime.host_tools(hosts = ["x64"])
 use_repo(msvc_runtime, "msvc_runtime")
 
 windows_sdk = use_extension("@windows_support//windows:extensions.bzl", "windows_sdk")
 windows_sdk.configure(
+    include_binaries = True,
     transformations = {
         # TODO: change using vfs instead!
         "base/c/Include/10.0.26100.0/shared/driverspecs.h": "base/c/Include/10.0.26100.0/shared/DriverSpecs.h",
@@ -38,5 +39,4 @@ windows_sdk.configure(
     },
     windows_sdk_version = "10.0.26100.7705",
 )
-windows_sdk.host_tools(hosts = ["x64"])
 use_repo(windows_sdk, "windows_sdk")

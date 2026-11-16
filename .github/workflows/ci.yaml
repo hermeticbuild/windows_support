@@ -22,13 +22,13 @@ jobs:
         [
           "e2e/msvc_runtime_lazy",
           "e2e/smoke",
-          "e2e/host_tools"
+          "e2e/include_binaries"
         ]
       exclude: |
         [
           {"folder": "e2e/msvc_runtime_lazy", "bzlmodEnabled": false},
           {"folder": "e2e/smoke", "bzlmodEnabled": false},
-          {"folder": "e2e/host_tools", "bzlmodEnabled": false}
+          {"folder": "e2e/include_binaries", "bzlmodEnabled": false}
         ]
   pre-commit:
     runs-on: ubuntu-latest

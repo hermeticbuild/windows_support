@@ -190,6 +190,7 @@ filegroup(
     ),
 )
 
+# rc.exe loads rcdll.dll from its own directory, so depend on the whole filegroup.
 [
     filegroup(
         name = "winsdk_bin_" + host,
@@ -198,5 +199,5 @@ filegroup(
             allow_empty = True,
         ),
     )
-    for host in ("x64", "arm64")
+    for host in ("x64", "x86", "arm64")
 ]
