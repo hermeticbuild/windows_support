@@ -1,7 +1,7 @@
 load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@bazel_lib//lib:diff_test.bzl", "diff_test")
 load("@bazel_lib//lib:run_binary.bzl", "run_binary")
-load("@windows_support//windows:msix.bzl", "msix_package")
+load("@windows_support//windows:msix.bzl", "appx_package", "msix_package")
 
 # The package layout, a tree artifact with `AppxManifest.xml` at its root.
 copy_to_directory(
@@ -18,9 +18,8 @@ msix_package(
     layout_dir = ":layout",
 )
 
-msix_package(
+appx_package(
     name = "app_appx",
-    out = "app_appx.appx",
     layout_dir = ":layout",
 )
 

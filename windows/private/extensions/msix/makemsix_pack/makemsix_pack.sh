@@ -11,7 +11,7 @@ package="$3"
 
 symlinked_dirs="$(cd "$layout" && find . -type l -exec test -d {} \; -print)"
 if [ -n "$symlinked_dirs" ]; then
-    echo "msix_package: the layout $layout must not contain symlinked directories, makemsix cannot pack them:" >&2
+    echo "error: the layout $layout must not contain symlinked directories, makemsix cannot pack them:" >&2
     echo "$symlinked_dirs" | sed 's#^\./#  #' >&2
     exit 1
 fi

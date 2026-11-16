@@ -1,14 +1,17 @@
-"""Implementation of the `msix_package` rule."""
+"""Implementation of the `msix_package` and `appx_package` rules."""
 
 MsixPackageInfo = provider(
-    doc = "An MSIX (or APPX) package, built by `msix_package`.",
+    doc = "An MSIX (or APPX) package, built by `msix_package` (or `appx_package`).",
     fields = {
         "package": "File: the unsigned `.msix` (or `.appx`) package.",
     },
 )
 
-def _msix_package_impl(ctx):
-    out = ctx.actions.declare_file(ctx.attr.out or ctx.label.name + ".msix")
+def _package_impl(ctx, extension, mnemonic, progress_message):
+    out_name = ctx.attr.out or ctx.label.name + extension
+    if not out_name.endswith(extension):
+        fail("out must have the `{}` extension, got `{}`".format(extension, out_name))
+    out = ctx.actions.declare_file(out_name)
 
     args = ctx.actions.args()
     args.add(ctx.executable.makemsix)
@@ -21,8 +24,8 @@ def _msix_package_impl(ctx):
         inputs = [ctx.file.layout_dir],
         tools = [ctx.attr.makemsix[DefaultInfo].files_to_run],
         outputs = [out],
-        mnemonic = "MsixPack",
-        progress_message = "Packing MSIX package %{output}",
+        mnemonic = mnemonic,
+        progress_message = progress_message,
         toolchain = None,
     )
 
@@ -31,18 +34,24 @@ def _msix_package_impl(ctx):
         MsixPackageInfo(package = out),
     ]
 
-msix_package = rule(
-    implementation = _msix_package_impl,
-    doc = """Packs a directory into an MSIX (or APPX) package with `makemsix pack -d <layout> -p <package>`.
+def _msix_package_impl(ctx):
+    return _package_impl(ctx, ".msix", "MsixPack", "Packing MSIX package %{output}")
+
+def _appx_package_impl(ctx):
+    return _package_impl(ctx, ".appx", "AppxPack", "Packing APPX package %{output}")
+
+_DOC = """Packs a directory into an {format} package with `makemsix pack -d <layout> -p <package>`.
 
 The package content (its "layout") is the `layout_dir` directory, packaged as is. It must have an
 `AppxManifest.xml` at its root, makemsix validates it and generates `AppxBlockMap.xml` and
 `[Content_Types].xml`.
 
 Inputs are only read: their permissions and timestamps are never modified. File
-permissions are not recorded in the package, the MSIX format does not store them.
+permissions are not recorded in the package, the {format} format does not store them.
 
 The package is not signed, sign it with `signtool` before installing it on Windows.
+
+{see_also}
 
 Limitations, inherited from makemsix:
 
@@ -55,18 +64,19 @@ Limitations, inherited from makemsix:
 Example:
 
 ```starlark
-load("@windows_support//windows:msix.bzl", "msix_package")
+load("@windows_support//windows:msix.bzl", "{rule}")
 
-msix_package(
+{rule}(
     name = "my_app",
     layout_dir = ":my_app_layout",
 )
 ```
 
 The rule provides `MsixPackageInfo`, with the package.
-""",
-    provides = [MsixPackageInfo],
-    attrs = {
+"""
+
+def _attrs(extension):
+    return {
         "layout_dir": attr.label(
             allow_single_file = True,
             mandatory = True,
@@ -86,7 +96,28 @@ directory. It must have an `AppxManifest.xml` at its root.""",
             cfg = "exec",
         ),
         "out": attr.string(
-            doc = "Name of the package file, defaults to `<name>.msix`. Use the `.appx` extension for an APPX package.",
+            doc = "Name of the package file, defaults to `<name>{ext}`. It must have the `{ext}` extension.".format(ext = extension),
         ),
-    },
+    }
+
+msix_package = rule(
+    implementation = _msix_package_impl,
+    doc = _DOC.format(
+        format = "MSIX",
+        rule = "msix_package",
+        see_also = "Use `appx_package` for an APPX package.",
+    ),
+    provides = [MsixPackageInfo],
+    attrs = _attrs(".msix"),
+)
+
+appx_package = rule(
+    implementation = _appx_package_impl,
+    doc = _DOC.format(
+        format = "APPX",
+        rule = "appx_package",
+        see_also = "Use `msix_package` for an MSIX package.",
+    ),
+    provides = [MsixPackageInfo],
+    attrs = _attrs(".appx"),
 )

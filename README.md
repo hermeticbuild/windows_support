@@ -86,20 +86,26 @@ Notes:
 - the redist DLLs only exist for the `x64`, `x86` and `arm64` architectures (no VC redistributable exists for `arm` or `arm64ec`, the latter uses the x64/arm64 redists)
 - only the desktop flavor of the redist is exposed, the `onecore` flavor is not kept
 
-## MSIX packages
+## MSIX and APPX packages
 
-`msix_package` packs files into an MSIX (or APPX) package with `makemsix pack -d <layout> -p <package>`, `makemsix` being built from source by the [`msix_packaging`](https://registry.bazel.build/modules/msix_packaging) module. It runs on Linux, macOS and Windows.
+`msix_package` packs files into an MSIX package, and `appx_package` into an APPX package, both with `makemsix pack -d <layout> -p <package>`, `makemsix` being built from source by the [`msix_packaging`](https://registry.bazel.build/modules/msix_packaging) module. It runs on Linux, macOS and Windows.
 
 The package content (its "layout") is a single directory with an `AppxManifest.xml` at its root, a tree artifact or a source directory, packaged as is:
 
 ```starlark
-load("@windows_support//windows:msix.bzl", "msix_package")
+load("@windows_support//windows:msix.bzl", "appx_package", "msix_package")
 
 msix_package(
     name = "my_app",
     layout_dir = ":my_app_layout",
-    # Defaults to `<name>.msix`.
+    # Defaults to `<name>.msix`, it must have the `.msix` extension.
     out = "my_app.msix",
+)
+
+# Same attributes, the package defaults to `<name>.appx`.
+appx_package(
+    name = "my_app_appx",
+    layout_dir = ":my_app_layout",
 )
 ```
 
