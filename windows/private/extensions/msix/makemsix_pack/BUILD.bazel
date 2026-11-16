@@ -1,0 +1,13 @@
+# Used by `msix_package` in consumers of the module, so it must not depend on dev dependencies: it
+# loads nothing, and opts out of the default package metadata, the root package loading gazelle.
+package(default_package_metadata = [])
+
+# Runs `makemsix pack`, checking the layout for symlinked directories first.
+alias(
+    name = "makemsix_pack",
+    actual = select({
+        "@platforms//os:windows": "makemsix_pack.bat",
+        "//conditions:default": "makemsix_pack.sh",
+    }),
+    visibility = ["//visibility:public"],
+)

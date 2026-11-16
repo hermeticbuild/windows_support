@@ -106,7 +106,7 @@ msix_package(
 Notes:
 
 - inputs are only read, their permissions and timestamps are never modified, and the package does not record file permissions
-- the layout must not contain symlinked directories, makemsix fails on them
+- the layout must not contain symlinked directories, the build fails listing them
 - a source directory is packaged with everything it contains on disk, prefer a tree artifact
 - packages are not reproducible: makemsix stamps entries with the current time, and orders them by the modification time of the layout files
 - packages are not signed, sign them with `signtool` before installing them

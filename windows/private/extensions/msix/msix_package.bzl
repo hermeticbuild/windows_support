@@ -11,14 +11,15 @@ def _msix_package_impl(ctx):
     out = ctx.actions.declare_file(ctx.attr.out or ctx.label.name + ".msix")
 
     args = ctx.actions.args()
-    args.add("pack")
-    args.add("-d", ctx.file.layout_dir.path)
-    args.add("-p", out)
+    args.add(ctx.executable.makemsix)
+    args.add(ctx.file.layout_dir.path)
+    args.add(out)
 
     ctx.actions.run(
-        executable = ctx.executable.makemsix,
+        executable = ctx.executable._makemsix_pack,
         arguments = [args],
         inputs = [ctx.file.layout_dir],
+        tools = [ctx.attr.makemsix[DefaultInfo].files_to_run],
         outputs = [out],
         mnemonic = "MsixPack",
         progress_message = "Packing MSIX package %{output}",
@@ -47,7 +48,7 @@ Limitations, inherited from makemsix:
 
 - the package is not reproducible: makemsix stamps entries with the current time, and orders
   them by the modification time of the layout files;
-- the layout must not contain symlinked directories;
+- the layout must not contain symlinked directories, the build fails listing them;
 - a source directory given as `layout_dir` is packaged with everything it contains on disk, prefer a
   tree artifact.
 
@@ -77,6 +78,12 @@ directory. It must have an `AppxManifest.xml` at its root.""",
             executable = True,
             cfg = "exec",
             doc = "The makemsix tool.",
+        ),
+        "_makemsix_pack": attr.label(
+            default = "//windows/private/extensions/msix/makemsix_pack",
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
         ),
         "out": attr.string(
             doc = "Name of the package file, defaults to `<name>.msix`. Use the `.appx` extension for an APPX package.",
