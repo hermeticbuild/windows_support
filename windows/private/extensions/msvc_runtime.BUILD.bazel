@@ -79,6 +79,44 @@ alias(
     }),
 )
 
+directory(
+    name = "subsets_files",
+    srcs = glob(
+        ["subsets/**"],
+        allow_empty = True,
+    ),
+)
+
+[
+    subdirectory(
+        name = "msvc_{}".format(subset),
+        parent = ":subsets_files",
+        path = "subsets/{}".format(subset),
+    )
+    for subset in ("com_support_include", "vcruntime_include")
+]
+
+[
+    subdirectory(
+        name = "msvc_{}_libraries_{}".format(subset, arch),
+        parent = ":subsets_files",
+        path = "subsets/lib/{}/{}".format(arch, subset),
+    )
+    for subset in ("com", "common", "dynamic", "static")
+    for arch in ("x64", "arm64")
+]
+
+[
+    alias(
+        name = "msvc_{}_libraries".format(subset),
+        actual = select({
+            ":windows_aarch64": ":msvc_{}_libraries_arm64".format(subset),
+            "//conditions:default": ":msvc_{}_libraries_x64".format(subset),
+        }),
+    )
+    for subset in ("com", "common", "dynamic", "static")
+]
+
 filegroup(
     name = "vc_redist_x64",
     srcs = glob(
